@@ -15,6 +15,9 @@ MonoBehaviour:
   arenaSize: 6
   wallHeight: 0.5
   zoneSize: 1
+  wallThickness: 0.1
+  floorThickness: 0.1
+  cameraMargin: 0.4
   roverLength: 0.2
   roverWidth: 0.15
   roverHeight: 0.08
@@ -39,4 +42,13 @@ MonoBehaviour:
   dropoutProbability: 0.02
   controllerInterval: 0.05
   physicsTimestep: 0.02
+  showVisualModel: 1
+  showViewAids: 1
+  followCameraHeight: 1.2
+  chaseBackDistance: 0.6
+  chaseHeight: 0.35
+  chasePitchDeg: 20
+  cameraFieldOfView: 60
+  cameraSmoothing: 6
+  trailWidth: 0.03
   maxRunTime: 60

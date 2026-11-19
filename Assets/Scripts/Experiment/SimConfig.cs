@@ -9,6 +9,9 @@ public class SimConfig : ScriptableObject
     public float arenaSize = 6f;          // arena is arenaSize x arenaSize
     public float wallHeight = 0.5f;
     public float zoneSize = 1f;           // start zone and goal zone are zoneSize x zoneSize
+    public float wallThickness = 0.1f;    // walls sit OUTSIDE the arena, so the inside stays arenaSize
+    public float floorThickness = 0.1f;   // floor top surface is at y = 0
+    public float cameraMargin = 0.4f;     // extra empty space (m) around the outside of the walls in the top-down view
 
     [Header("Rover body (metres, kg)")]
     public float roverLength = 0.20f;
@@ -36,6 +39,28 @@ public class SimConfig : ScriptableObject
     [Header("Timing (seconds)")]
     public float controllerInterval = 0.05f; // controllers decide at 20 Hz
     public float physicsTimestep = 0.02f;    // Unity fixed timestep
+
+    [Header("Visuals")]
+    // true = show the detailed Perseverance model (demos, screenshots); false = plain box rover.
+    // Visual only: the invisible BoxCollider is always the real body. The ExperimentRunner must set this to FALSE.
+    public bool showVisualModel = true;
+    // true = viewing aids: follow camera (key C), path trail, heading nose on top of the model. Visual only.
+    public bool showViewAids = true;
+    public float followCameraHeight = 1.2f;  // FOLLOW view: metres above the rover, looking straight down
+    public float chaseBackDistance = 0.6f;   // CHASE view: metres behind the rover
+    public float chaseHeight = 0.35f;        // CHASE view: metres above the floor
+    public float chasePitchDeg = 20f;        // CHASE view: tilt looking down ("slightly down")
+    public float cameraFieldOfView = 60f;    // FOLLOW and CHASE views (ARENA is orthographic)
+    public float cameraSmoothing = 6f;       // higher = camera sticks closer to the rover (per second)
+    public float trailWidth = 0.03f;         // metres, path line behind the rover
+
+    /// <summary>Switch off everything that is only for looking at. Call this on a runtime COPY of the config
+    /// (Object.Instantiate), never on the asset, before running experiments.</summary>
+    public void SetExperimentMode()
+    {
+        showVisualModel = false;
+        showViewAids = false;
+    }
 
     [Header("Run limits")]
     public float maxRunTime = 60f;        // a run also ends on goal reached or any collision
