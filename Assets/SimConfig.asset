@@ -44,6 +44,7 @@ MonoBehaviour:
   controllerInterval: 0.05
   physicsTimestep: 0.02
   startHeadingRangeDeg: 45
+  startWallClearance: 0.05
   firstTrialSeed: 1
   trialCount: 30
   showVisualModel: 1

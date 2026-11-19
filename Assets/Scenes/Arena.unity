@@ -157,7 +157,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 16, y: -16}
-  m_SizeDelta: {x: 608, y: 418.80154}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &28486899
 MonoBehaviour:
@@ -245,9 +245,17 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 3513382036398256232, guid: f35af651ed7b96045b99d3f2fadab48f, type: 3}
+      propertyPath: controller
+      value: RuleBasedController
+      objectReference: {fileID: 0}
     - target: {fileID: 6516483940855396806, guid: f35af651ed7b96045b99d3f2fadab48f, type: 3}
       propertyPath: m_Name
       value: Rover
+      objectReference: {fileID: 0}
+    - target: {fileID: 6516483940855396806, guid: f35af651ed7b96045b99d3f2fadab48f, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7169352950697091120, guid: f35af651ed7b96045b99d3f2fadab48f, type: 3}
       propertyPath: m_LocalPosition.x
@@ -292,17 +300,14 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 6516483940855396806, guid: f35af651ed7b96045b99d3f2fadab48f, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 641837165}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: f35af651ed7b96045b99d3f2fadab48f, type: 3}
 --- !u!114 &641837162 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 457292674218991290, guid: f35af651ed7b96045b99d3f2fadab48f, type: 3}
   m_PrefabInstance: {fileID: 641837161}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 641837164}
+  m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e7d0042b759988a4a8a7090e8b306588, type: 3}
@@ -313,36 +318,18 @@ MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 8477461315771000704, guid: f35af651ed7b96045b99d3f2fadab48f, type: 3}
   m_PrefabInstance: {fileID: 641837161}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 641837164}
+  m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f49a2d026a5c58540a43611f092d73fc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RoverStatus
---- !u!1 &641837164 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 6516483940855396806, guid: f35af651ed7b96045b99d3f2fadab48f, type: 3}
-  m_PrefabInstance: {fileID: 641837161}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &641837165
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 641837164}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 84a1c40efd5db40448320c21fb3d0507, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::KeyboardController
-  drive: {fileID: 0}
 --- !u!114 &641837166 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 2716884311398629994, guid: f35af651ed7b96045b99d3f2fadab48f, type: 3}
   m_PrefabInstance: {fileID: 641837161}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 641837164}
+  m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1d45c1573de01894bb7db1b86d52bf9d, type: 3}
@@ -742,7 +729,7 @@ MonoBehaviour:
   obstacleMaterial: {fileID: 2100000, guid: 3b8d2f6e1c7a4e59b0a4d5c8e9f21a63, type: 2}
   startZone: {fileID: 949282078}
   goalZone: {fileID: 724918535}
-  map: {fileID: 0}
+  map: {fileID: 11400000, guid: 313d959abfe94bd48b7b17a445bfa351, type: 2}
   loadOnStart: 1
 --- !u!4 &1034914814
 Transform:
@@ -797,7 +784,7 @@ RectTransform:
   m_AnchorMin: {x: 1, y: 1}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: -30, y: -30}
-  m_SizeDelta: {x: 331.65445, y: 72.11275}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 1, y: 1}
 --- !u!114 &1199423153
 MonoBehaviour:
@@ -1012,10 +999,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 1199423152}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 165.82722, y: -36.056374}
-  m_SizeDelta: {x: 283.65445, y: 40.11275}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &1452413795
 GameObject:
@@ -1097,10 +1084,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 28486898}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 304, y: -209.40077}
-  m_SizeDelta: {x: 560, y: 386.80154}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1475809717
 MonoBehaviour:
@@ -2022,6 +2009,8 @@ MonoBehaviour:
   rover: {fileID: 641837162}
   startZone: {fileID: 949282078}
   goalZone: {fileID: 724918535}
+  spawnOnStart: 1
+  demoSeed: 1
 --- !u!4 &2139537017
 Transform:
   m_ObjectHideFlags: 0

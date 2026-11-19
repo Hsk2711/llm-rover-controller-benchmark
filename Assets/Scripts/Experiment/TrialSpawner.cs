@@ -1,5 +1,5 @@
 // TrialSpawner: puts the rover on its start pose for one trial. Given a trial seed it picks a random point inside the start
-// zone (the whole rover stays inside the zone) and a random heading between -45 and +45 degrees from the direction of the
+// zone (the whole rover stays inside it, at least startWallClearance from its edge) and a random heading between -45 and +45 degrees from the direction of the
 // goal, using a System.Random seeded from the trial seed (never UnityEngine.Random). The same seed always gives the same pose, whatever the
 // controller, noise level or map. Sign convention: positive goal angle = the goal is to the LEFT of the rover's heading.
 using UnityEngine;
@@ -19,6 +19,15 @@ public class TrialSpawner : MonoBehaviour
     public RoverDrive rover;
     public Transform startZone;      // found by the name "StartZone" if left empty (MapLoader moves it to the map's start)
     public Transform goalZone;       // found by the name "GoalZone" if left empty
+
+    [Header("Demo (pressing Play)")]
+    public bool spawnOnStart;        // place the rover for demoSeed when Play starts (the experiment runner does not use this)
+    public int demoSeed = 1;
+
+    void Start()
+    {
+        if (spawnOnStart) Spawn(demoSeed);
+    }
 
     /// <summary>Place the rover for this trial seed, stop it and restart its run records. Returns the pose used.</summary>
     public StartPose Spawn(int trialSeed)
@@ -49,9 +58,11 @@ public class TrialSpawner : MonoBehaviour
         var rng = new System.Random(MixSeed(trialSeed));
         double ux = rng.NextDouble(), uz = rng.NextDouble(), ua = rng.NextDouble();   // always three draws, in this order
 
-        // Any point of the zone where the whole rover (even turned diagonally) still fits inside it.
+        // Any point of the zone where the whole rover (even turned diagonally) stays at least startWallClearance away from the
+        // zone edge. The clearance matters: with no gap the rover can touch the arena wall at the start, and the physics engine
+        // reports that as a collision (it counts contacts inside its 1 cm contact margin), which would end the run at once.
         float halfDiagonal = 0.5f * Mathf.Sqrt(config.roverLength * config.roverLength + config.roverWidth * config.roverWidth);
-        float range = config.zoneSize * 0.5f - halfDiagonal;
+        float range = config.zoneSize * 0.5f - halfDiagonal - config.startWallClearance;
         var position = new Vector2(startCentre.x + (float)(2 * ux - 1) * range, startCentre.y + (float)(2 * uz - 1) * range);
         float goalAngle = (float)(2 * ua - 1) * config.startHeadingRangeDeg;
 

@@ -20,8 +20,9 @@ algorithm on the same simulated rover. Results must be real, reproducible and fa
 - All randomness from a seeded System.Random, never UnityEngine.Random.
 - Trial seeds 1 to 30 (SimConfig firstTrialSeed, trialCount). The start pose depends only on the trial
   seed (same seed = same pose for every controller, noise level and map), made by TrialSpawner:
-  position uniform in x and z within +-0.375 m of the start-zone centre (x, z in [-2.875, -2.125] m:
-  zone half-width 0.5 m minus rover half-diagonal 0.125 m, so the whole rover is inside the zone);
+  position uniform in x and z within +-0.325 m of the start-zone centre (x, z in [-2.825, -2.175] m:
+  zone half-width 0.5 m minus rover half-diagonal 0.125 m minus 0.05 m wall clearance, SimConfig
+  startWallClearance, so the whole rover is inside the zone and never touches the arena wall);
   heading = facing the goal, turned by a uniform goal angle within +-45 deg (positive = goal to the LEFT).
   The trial seed goes through an integer hash before it seeds System.Random (plain consecutive seeds
   give a regular lattice, not random poses). The 30 poses are in results/start_poses.csv.

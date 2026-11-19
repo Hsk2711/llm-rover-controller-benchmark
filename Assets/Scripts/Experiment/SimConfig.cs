@@ -44,6 +44,7 @@ public class SimConfig : ScriptableObject
     [Header("Trial start pose")]
     // TrialSpawner: random point inside the start zone, random goal angle within +-this (positive = goal to the LEFT).
     public float startHeadingRangeDeg = 45f;
+    public float startWallClearance = 0.05f;     // m: the rover starts at least this far from the zone edge (= arena wall), even turned diagonally
     public int firstTrialSeed = 1;               // the study uses trial seeds 1..30
     public int trialCount = 30;
 

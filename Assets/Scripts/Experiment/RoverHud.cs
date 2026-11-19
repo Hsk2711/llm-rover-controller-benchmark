@@ -1,4 +1,4 @@
-// RoverHud: updates the on-screen text boxes (rover readings, view label). Display only; it never changes
+// RoverHud: updates the on-screen text boxes (rover readings, active controller and its command, view label). Display only; it never changes
 // the simulation. When SimConfig.showViewAids is false (experiments) the whole HUD canvas is switched off.
 using UnityEngine;
 
@@ -39,6 +39,18 @@ public class RoverHud : MonoBehaviour
                 "\nFront: " + r.front.ToString("0.00") + " m" +
                 "\nLeft: " + r.left.ToString("0.00") + " m" +
                 "\nRight: " + r.right.ToString("0.00") + " m";
+        }
+
+        var host = drive.GetComponent<ControllerHost>();
+        if (host != null)
+        {
+            float t = host.LastTurn;
+            string side = t > 0.005f ? " (left)" : t < -0.005f ? " (right)" : "";
+            text.text +=
+                "\nController: " + host.ControllerName +
+                "\nSpeed cmd: " + host.LastSpeed.ToString("0.00") +
+                "\nTurn cmd: " + t.ToString("+0.00;-0.00;0.00") + side +
+                "\nController errors: " + host.ExceptionCount;
         }
     }
 }

@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ee8ef22ac52e1fa4198bcaf9e380bc4a, type: 3}
+  m_Name: Bug2Params
+  m_EditorClassIdentifier: Assembly-CSharp::Bug2Params
+  hitDistance: 0.3
+  wallDistance: 0.25
+  mLineTolerance: 0.05
+  progressMargin: 0.1
+  loopPathLength: 1
+  medianWindow: 3
+  frontClearDistance: 0.45
+  goSpeed: 1
+  wallSpeed: 0.5
+  wallGain: 4
+  goalAngleForFullTurnDeg: 45
+  hitReturnRadius: 0.15
