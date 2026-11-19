@@ -15,6 +15,7 @@ MonoBehaviour:
   arenaSize: 6
   wallHeight: 0.5
   zoneSize: 1
+  obstacleHeight: 0.5
   wallThickness: 0.1
   floorThickness: 0.1
   cameraMargin: 0.4

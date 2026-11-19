@@ -1,0 +1,71 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c1e5b0a93d44f2e8a6b2d9f4c3e1a70, type: 3}
+  m_Name: M2_Cluttered
+  m_EditorClassIdentifier: Assembly-CSharp::MapDefinition
+  startZoneCentre: {x: -2.5, y: -2.5}
+  goalZoneCentre: {x: 2.5, y: 2.5}
+  obstacles:
+  - position: {x: -1.214, y: 1.4903}
+    rotationDeg: 77.4818
+    size: {x: 0.4856, y: 0.3292}
+  - position: {x: -1.2142, y: -1.7855}
+    rotationDeg: 17.9505
+    size: {x: 0.5402, y: 0.3257}
+  - position: {x: 0.6763, y: -1.6926}
+    rotationDeg: 38.6573
+    size: {x: 0.3176, y: 0.5503}
+  - position: {x: 1.6768, y: -0.5484}
+    rotationDeg: 34.7149
+    size: {x: 0.5892, y: 0.537}
+  - position: {x: -0.4474, y: 0.1474}
+    rotationDeg: 33.4376
+    size: {x: 0.3621, y: 0.5178}
+  - position: {x: -2.1737, y: 0.3571}
+    rotationDeg: 7.7362
+    size: {x: 0.5284, y: 0.5603}
+  - position: {x: 2.1743, y: 0.9845}
+    rotationDeg: 57.0631
+    size: {x: 0.4262, y: 0.363}
+  - position: {x: -1.2144, y: -0.6359}
+    rotationDeg: 26.0031
+    size: {x: 0.4454, y: 0.3767}
+  - position: {x: 0.6527, y: 0.4304}
+    rotationDeg: 54.8884
+    size: {x: 0.4024, y: 0.457}
+  - position: {x: -0.2986, y: 1.2957}
+    rotationDeg: 27.3019
+    size: {x: 0.3545, y: 0.3367}
+  - position: {x: 2.0257, y: -1.95}
+    rotationDeg: 12.5311
+    size: {x: 0.5611, y: 0.3492}
+  - position: {x: 0.6238, y: 2.2879}
+    rotationDeg: 84.9231
+    size: {x: 0.3427, y: 0.3627}
+  - position: {x: -2.1645, y: 2.1683}
+    rotationDeg: 0.9023
+    size: {x: 0.5439, y: 0.4845}
+  - position: {x: -0.2906, y: -1.1552}
+    rotationDeg: 30.0021
+    size: {x: 0.3613, y: 0.3376}
+  - position: {x: 1.2091, y: 1.3791}
+    rotationDeg: 3.1701
+    size: {x: 0.5375, y: 0.3319}
+  - position: {x: -2.2925, y: -1.0439}
+    rotationDeg: 9.9063
+    size: {x: 0.313, y: 0.3273}
+  - position: {x: -0.313, y: 2.2565}
+    rotationDeg: 86.6002
+    size: {x: 0.3448, y: 0.3069}
+  - position: {x: 0.5544, y: -0.5999}
+    rotationDeg: 8.2158
+    size: {x: 0.3318, y: 0.3236}

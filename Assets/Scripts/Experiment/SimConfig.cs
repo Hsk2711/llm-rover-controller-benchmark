@@ -9,6 +9,7 @@ public class SimConfig : ScriptableObject
     public float arenaSize = 6f;          // arena is arenaSize x arenaSize
     public float wallHeight = 0.5f;
     public float zoneSize = 1f;           // start zone and goal zone are zoneSize x zoneSize
+    public float obstacleHeight = 0.5f;   // box obstacles built from a MapDefinition (same height as the walls)
     public float wallThickness = 0.1f;    // walls sit OUTSIDE the arena, so the inside stays arenaSize
     public float floorThickness = 0.1f;   // floor top surface is at y = 0
     public float cameraMargin = 0.4f;     // extra empty space (m) around the outside of the walls in the top-down view
