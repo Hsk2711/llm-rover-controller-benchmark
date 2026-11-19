@@ -61,6 +61,30 @@ public class MapWindow : EditorWindow
         Debug.Log("Practice map from seed " + practiceSeed + " loaded.");
     }
 
+    // Writes results/start_poses.csv: the start pose of every trial seed (firstTrialSeed .. firstTrialSeed+trialCount-1).
+    // heading_deg: rover heading in the map frame, counter-clockwise from east (+x), 0..360 (Unity yaw = 90 - heading).
+    // goal_angle_deg: angle to the goal as the rover sees it, positive = goal to the LEFT.
+    [MenuItem("Rover/Export Start Poses (CSV)")]
+    static void ExportStartPoses()
+    {
+        var config = AssetDatabase.LoadAssetAtPath<SimConfig>("Assets/SimConfig.asset");
+        var map = AssetDatabase.LoadAssetAtPath<MapDefinition>("Assets/Maps/M1_Open.asset");   // all maps share the zone centres
+        if (config == null || map == null) { Debug.LogError("Export Start Poses: SimConfig or map not found"); return; }
+
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        var csv = new System.Text.StringBuilder("seed,x,z,heading_deg,goal_angle_deg\n");
+        for (int seed = config.firstTrialSeed; seed < config.firstTrialSeed + config.trialCount; seed++)
+        {
+            StartPose p = TrialSpawner.ComputePose(seed, map.startZoneCentre, map.goalZoneCentre, config);
+            csv.Append(seed).Append(',').Append(p.position.x.ToString("0.0000", inv)).Append(',').Append(p.position.y.ToString("0.0000", inv))
+               .Append(',').Append(p.HeadingDeg.ToString("0.00", inv)).Append(',').Append(p.goalAngleDeg.ToString("0.00", inv)).Append('\n');
+        }
+        string full = System.IO.Path.GetFullPath(System.IO.Path.Combine(Application.dataPath, "..", "results", "start_poses.csv"));
+        System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(full));
+        System.IO.File.WriteAllText(full, csv.ToString());
+        Debug.Log("Saved " + full);
+    }
+
     static void MarkDirty(MapLoader loader)
     {
         if (!Application.isPlaying) EditorSceneManager.MarkSceneDirty(loader.gameObject.scene);

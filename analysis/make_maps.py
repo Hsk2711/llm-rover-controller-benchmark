@@ -104,7 +104,8 @@ def path_exists(boxes, clearance=ROVER_R, cell=0.05):
 def shortest_path(boxes, clearance=0.10, cell=0.05):
     """Shortest collision-free path from the start-zone centre to the goal-zone centre.
     The rover is a point that must stay at least `clearance` away from every box and every arena wall. Dijkstra on a grid
-    (16 neighbours), then straightened by line-of-sight shortcuts. Returns (grid length, straightened length) in metres."""
+    (16 neighbours), then straightened by line-of-sight shortcuts. Returns (grid length, straightened length in metres,
+    the straightened path as a list of (x, z) points)."""
     import heapq
     import numpy as np
     n = round(2 * HALF / cell)
@@ -172,7 +173,7 @@ def shortest_path(boxes, clearance=0.10, cell=0.05):
             j -= 1
         out.append(pts[j])
         i = j
-    return grid_len, sum(math.hypot(b[0] - a[0], b[1] - a[1]) for a, b in zip(out, out[1:]))
+    return grid_len, sum(math.hypot(b[0] - a[0], b[1] - a[1]) for a, b in zip(out, out[1:])), out
 
 
 def stats(boxes):
@@ -405,30 +406,40 @@ def write_asset(name, boxes):
     (MAP_DIR / (name + ".asset")).write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
 
 
-def draw(maps):
+def draw_map(ax, name, boxes, path, length):
+    from matplotlib.patches import Polygon, Rectangle
+    ax.add_patch(Rectangle((-HALF, -HALF), 2 * HALF, 2 * HALF, fill=False, lw=2.5, color="black"))
+    ax.add_patch(Rectangle((START[0] - .5, START[1] - .5), 1, 1, color="#4caf50", alpha=.40))
+    ax.add_patch(Rectangle((GOAL[0] - .5, GOAL[1] - .5), 1, 1, color="#2196f3", alpha=.40))
+    for b in boxes:
+        ax.add_patch(Polygon(corners(b), color="#707070"))
+    ax.plot([p[0] for p in path], [p[1] for p in path], ls="--", lw=1.6, color="#e65100", label="shortest path %.2f m" % length)
+    ax.text(START[0], START[1] - .38, "START", ha="center", fontsize=8, color="#1b5e20")
+    ax.text(GOAL[0], GOAL[1] + .30, "GOAL", ha="center", fontsize=8, color="#0d47a1")
+    ax.set_xlim(-HALF - .15, HALF + .15)
+    ax.set_ylim(-HALF - .15, HALF + .15)
+    ax.set_aspect("equal")
+    ax.set_title("%s  (%d boxes)" % (name, len(boxes)), fontsize=11)
+    ax.set_xlabel("x (m)")
+    ax.legend(loc="lower right", fontsize=8, framealpha=.9)
+
+
+def draw(maps, paths, lengths):
+    """Quick schematic of the four maps with their shortest paths (docs/figures/maps_overview.png). The paper's Figure 2
+    pictures are rendered by Unity instead (docs/figures/maps/)."""
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
-    from matplotlib.patches import Polygon, Rectangle
-    fig, axes = plt.subplots(1, 4, figsize=(16, 4.4))
+    out_dir = ROOT / "docs" / "figures"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    fig, axes = plt.subplots(1, 4, figsize=(18, 4.9))
     for ax, (name, boxes) in zip(axes, maps.items()):
-        ax.add_patch(Rectangle((-HALF, -HALF), 2 * HALF, 2 * HALF, fill=False, lw=2, color="black"))
-        ax.add_patch(Rectangle((START[0] - .5, START[1] - .5), 1, 1, color="#4caf50", alpha=.45))
-        ax.add_patch(Rectangle((GOAL[0] - .5, GOAL[1] - .5), 1, 1, color="#2196f3", alpha=.45))
-        for b in boxes:
-            ax.add_patch(Polygon(corners(b), color="#808080"))
-        ax.plot([START[0], GOAL[0]], [START[1], GOAL[1]], ls=":", lw=1, color="black")
-        ax.set_xlim(-HALF - .2, HALF + .2)
-        ax.set_ylim(-HALF - .2, HALF + .2)
-        ax.set_aspect("equal")
-        ax.set_title("%s (%d boxes)" % (name, len(boxes)))
-        ax.set_xlabel("x (m)")
+        draw_map(ax, name, boxes, paths[name], lengths[name])
     axes[0].set_ylabel("z (m)")
     fig.tight_layout()
-    out = ROOT / "docs" / "figures" / "maps_overview.png"
-    out.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(out, dpi=130)
-    print("preview:", out)
+    fig.savefig(out_dir / "maps_overview.png", dpi=130)
+    plt.close(fig)
+    print("preview written to", out_dir / "maps_overview.png")
 
 
 MAX_PATH = 8.0        # m: a controller at half speed (0.15 m/s) must still be able to finish within 60 s
@@ -440,18 +451,18 @@ def path_table(maps):
     print()
     print("Shortest collision-free path, start-zone centre -> goal-zone centre (0.10 m clearance)")
     print("%-14s %9s %9s %7s %10s %10s" % ("map", "grid (m)", "short (m)", "x line", "t @0.30", "t @0.15"))
-    result = {}
+    result, paths = {}, {}
     for name, boxes in maps.items():
-        grid, short = shortest_path(boxes)
+        grid, short, paths[name] = shortest_path(boxes)
         result[name] = short
         print("%-14s %9.2f %9.2f %7.2f %8.0f s %8.0f s" % (name, grid, short, short / straight, short / 0.30, short / 0.15))
     print("straight line start-goal = %.2f m;  limit = %.1f m" % (straight, MAX_PATH))
-    return result
+    return result, paths
 
 
 if __name__ == "__main__":
     all_maps = verify_all()
-    lengths = path_table(all_maps)
+    lengths, paths = path_table(all_maps)
     too_long = [k for k, v in lengths.items() if v > MAX_PATH]
     if too_long:
         sys.exit("path longer than %.1f m: %s" % (MAX_PATH, ", ".join(too_long)))
@@ -459,4 +470,4 @@ if __name__ == "__main__":
     for map_name, map_boxes in all_maps.items():
         write_asset(map_name, map_boxes)
         print("wrote", MAP_DIR / (map_name + ".asset"))
-    draw(all_maps)
+    draw(all_maps, paths, lengths)

@@ -77,13 +77,16 @@ public class MapLoader : MonoBehaviour
         }
     }
 
+    static void Resolve(ref Transform zone, string zoneName)
+    {
+        if (zone != null) return;
+        var found = GameObject.Find(zoneName);
+        if (found != null) zone = found.transform;
+    }
+
     void PlaceZone(ref Transform zone, string zoneName, Vector2 centre)
     {
-        if (zone == null)
-        {
-            var found = GameObject.Find(zoneName);
-            if (found != null) zone = found.transform;
-        }
+        Resolve(ref zone, zoneName);
         if (zone == null) { Debug.LogWarning("MapLoader: no object named " + zoneName + " found", this); return; }
         Vector3 p = zone.position;
         zone.position = new Vector3(centre.x, p.y, centre.y);

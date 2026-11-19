@@ -41,6 +41,12 @@ public class SimConfig : ScriptableObject
     public float controllerInterval = 0.05f; // controllers decide at 20 Hz
     public float physicsTimestep = 0.02f;    // Unity fixed timestep
 
+    [Header("Trial start pose")]
+    // TrialSpawner: random point inside the start zone, random goal angle within +-this (positive = goal to the LEFT).
+    public float startHeadingRangeDeg = 45f;
+    public int firstTrialSeed = 1;               // the study uses trial seeds 1..30
+    public int trialCount = 30;
+
     [Header("Visuals")]
     // true = show the detailed Perseverance model (demos, screenshots); false = plain box rover.
     // Visual only: the invisible BoxCollider is always the real body. The ExperimentRunner must set this to FALSE.
