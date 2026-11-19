@@ -43,7 +43,12 @@ public class SensorRig : MonoBehaviour
         return (front.LastReading, left.LastReading, right.LastReading);
     }
 
-    void Awake() { Setup(); }
+    void Awake()
+    {
+        Setup();
+        // Viewing aid only: draws the beams in the Game view. Added here so no prefab edit is needed.
+        if (GetComponent<SensorBeamView>() == null) gameObject.AddComponent<SensorBeamView>();
+    }
 
     /// <summary>Place and configure the sensors from SimConfig (also called by RoverDrive.ApplyConfig).</summary>
     public void Setup()

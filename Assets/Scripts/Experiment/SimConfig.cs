@@ -44,7 +44,7 @@ public class SimConfig : ScriptableObject
     // true = show the detailed Perseverance model (demos, screenshots); false = plain box rover.
     // Visual only: the invisible BoxCollider is always the real body. The ExperimentRunner must set this to FALSE.
     public bool showVisualModel = true;
-    // true = viewing aids: follow camera (key C), path trail, heading nose on top of the model. Visual only.
+    // true = viewing aids: follow camera (key C), path trail, sensor beams in the Game view (key G), HUD. Visual only.
     public bool showViewAids = true;
     public float followCameraHeight = 1.2f;  // FOLLOW view: metres above the rover, looking straight down
     public float chaseBackDistance = 0.6f;   // CHASE view: metres behind the rover
@@ -52,7 +52,10 @@ public class SimConfig : ScriptableObject
     public float chasePitchDeg = 20f;        // CHASE view: tilt looking down ("slightly down")
     public float cameraFieldOfView = 60f;    // FOLLOW and CHASE views (ARENA is orthographic)
     public float cameraSmoothing = 6f;       // higher = camera sticks closer to the rover (per second)
-    public float trailWidth = 0.03f;         // metres, path line behind the rover
+    public float trailWidth = 0.015f;        // metres, path line behind the rover (cyan)
+    public float beamWidth = 0.01f;          // metres, sensor beam lines in the Game view (key G shows/hides them)
+    public float beamNearDistance = 0.5f;    // m, beam is RED below this distance
+    public float beamFarDistance = 1.5f;     // m, beam is YELLOW up to this distance, GREEN beyond (or if nothing detected)
 
     /// <summary>Switch off everything that is only for looking at. Call this on a runtime COPY of the config
     /// (Object.Instantiate), never on the asset, before running experiments.</summary>

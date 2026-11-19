@@ -2273,7 +2273,7 @@ TrailRenderer:
   m_PreviewTimeScale: 1
   m_Parameters:
     serializedVersion: 3
-    widthMultiplier: 0.03
+    widthMultiplier: 0.015
     widthCurve:
       serializedVersion: 2
       m_Curve:
@@ -2291,8 +2291,8 @@ TrailRenderer:
       m_RotationOrder: 4
     colorGradient:
       serializedVersion: 2
-      key0: {r: 1, g: 0.050980393, b: 0.101960786, a: 1}
-      key1: {r: 1, g: 0.050980393, b: 0.101960786, a: 1}
+      key0: {r: 0, g: 0.9, b: 1, a: 1}
+      key1: {r: 0, g: 0.9, b: 1, a: 1}
       key2: {r: 0, g: 0, b: 0, a: 0}
       key3: {r: 0, g: 0, b: 0, a: 0}
       key4: {r: 0, g: 0, b: 0, a: 0}
@@ -5352,7 +5352,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RoverDrive
   config: {fileID: 11400000, guid: b2ea909510959fd488bcafa59e20b90d, type: 2}
-  modelTopLocalY: 0.062356606
 --- !u!114 &8477461315771000704
 MonoBehaviour:
   m_ObjectHideFlags: 0

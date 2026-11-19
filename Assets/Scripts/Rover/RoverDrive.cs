@@ -8,10 +8,6 @@ public class RoverDrive : MonoBehaviour
 {
     public SimConfig config;
 
-    // Visual only: top of the VisualModel in this object's local space (set when the model was added to the
-    // prefab). Used to rest the nose marker on top of the model.
-    public float modelTopLocalY;
-
     Rigidbody rb;
     float speedCommand;   // 0..1 of max speed (or -1..1 if SimConfig allows reversing)
     float turnCommand;    // -1..1 of max turn rate, positive = left
@@ -45,18 +41,15 @@ public class RoverDrive : MonoBehaviour
         if (model != null) model.gameObject.SetActive(showModel);
         SetRendererEnabled(body, !showModel);
 
-        // The nose is a small bright marker on the front of the roof so the heading is visible from above.
-        // On the plain box it sits on the box roof; with the model shown it sits on top of the model.
+        // The nose is a small bright marker on the front of the roof so the heading is visible from above on the plain
+        // box. It is hidden whenever the Perseverance model is shown (the model shows the heading itself).
         var nose = transform.Find("Nose");
         if (nose != null)
         {
             float n = w * 0.4f;
-            float noseY = showModel
-                ? modelTopLocalY + h * 0.25f   // rests on top of the model (nose is h*0.5 tall)
-                : h * 0.5f;                    // centred on the box roof, as before
             nose.localScale = new Vector3(n, h * 0.5f, n);
-            nose.localPosition = new Vector3(0f, noseY, l * 0.5f - n * 0.5f);
-            SetRendererEnabled(nose, !showModel || config.showViewAids);
+            nose.localPosition = new Vector3(0f, h * 0.5f, l * 0.5f - n * 0.5f);   // centred on the box roof
+            SetRendererEnabled(nose, !showModel);
         }
 
         // Viewing aid: the path trail (a child object). Off when SimConfig.showViewAids is false.

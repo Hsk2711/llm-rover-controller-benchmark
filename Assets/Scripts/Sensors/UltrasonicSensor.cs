@@ -4,7 +4,7 @@
 // with probability dropoutProbability the echo is lost and the reading is maxRange. If NO ray hits anything within
 // range the reading is exactly maxRange: noise and dropout apply only to real echoes. All randomness comes from the
 // System.Random it is given (never UnityEngine.Random). It does not update itself: SensorRig calls Tick() in a fixed
-// order so the shared random stream is consumed in the same order every run. Rays are drawn as Scene-view gizmos.
+// order so the shared random stream is consumed in the same order every run. Rays are drawn as Scene-view gizmos (and in the Game view by SensorBeamView).
 using System;
 using UnityEngine;
 
@@ -31,6 +31,13 @@ public class UltrasonicSensor : MonoBehaviour
     Vector3[] drawEnds = new Vector3[0];
     bool[] drawHit = new bool[0];
     bool hasMeasured;
+
+    // Read-only view of the last measurement's rays, used only by SensorBeamView to draw them (does not affect readings).
+    public bool HasMeasured => hasMeasured;
+    public int RayCount => drawEnds.Length;
+    public Vector3 RayOrigin => drawOrigin;
+    public Vector3 RayEnd(int i) => drawEnds[i];
+    public bool RayHit(int i) => drawHit[i];
 
     /// <summary>Give the sensor its settings and the shared random generator.</summary>
     public void Initialize(SimConfig cfg, System.Random sharedRandom, float noiseLevel)
