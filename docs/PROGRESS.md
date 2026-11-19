@@ -109,6 +109,22 @@ Checklist of project phases. Update at the end of each phase.
   face of the box (right reading 0.13-0.16 m a moment later) and the rover collides at 9.0 s. An earlier temporary experiment on
   simple maps suggested a much gentler turn (cap 0.2) works and 0.4 does not; not applied. Open design decision for the author.
 
+## Pilot revision (2026-11-20, before Phase 6) - full details in docs/reports/pilot_revision.md
+
+- Platform: 5 ultrasonic sensors instead of 3 (new: left side +90 deg and right side -90 deg, mid-body, same model and noise);
+  `Observation` has `leftSide` and `rightSide`; SimConfig.sensorAnglesDeg = {0, 45, -45, 90, -90}; HUD and beams updated; CLAUDE.md updated.
+  This applies to every controller, including the 30 chatbot ones (the Phase 6 prompt must describe five sensors).
+- Phase 2 checks rerun for the two new sensors (Rover > Validate Side Sensors, results/sensor_validation_side.csv): all criteria pass
+  (sd/(noise x mean) 0.994, dropout 0.020, mean = true at 0% noise).
+- Bug2: wall-following distance (0.25 m) from the right SIDE sensor; wall-lost rule replaced: right side reading > 0.60 m -> drive straight
+  50% speed for 0.20 m, then turn right 60% until the wall is found again; front < 0.30 m keeps priority. Rule-based: side rule uses the
+  smaller of the 45 deg and 90 deg reading on each side.
+- Validated ONLY on practice maps (seeds 3000-3049) and two synthetic maps, trial seeds 1-3, noise 0.05, nothing on the test maps.
+  Practice goal rate before -> after: rule-based 52.0% -> 93.3%, Bug2 14.7% -> 32.0% (150 runs each).
+- Provenance for the paper: the revision followed the baselines' failures on the test maps, so it is NOT blind to them; disclose it.
+- BASELINES FROZEN from this point (RuleBasedController, Bug2Controller, RuleParams, Bug2Params); blob ids in the report.
+  The earlier notes above (3 sensors, old wall-lost rule) describe the platform before this revision.
+
 ## Notes for later phases
 
 - Phase 7: for each trial seed 1-30 call `TrialSpawner.Spawn(seed)` (after `MapLoader.Load(map)`) so every controller starts

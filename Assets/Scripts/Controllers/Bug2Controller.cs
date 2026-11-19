@@ -1,13 +1,15 @@
-// Bug2Controller: Lumelsky & Stepanov's Bug2 for our three noisy ultrasonic sensors. It also knows where it is: it uses
-// roverPos, startPos and goalPos from the Observation (state this in the paper). The M-line is the straight line from the
-// start point to the goal. Numbers are in Bug2Params. Every sensor is smoothed with a median filter (sonar is noisy).
+// Bug2Controller: Lumelsky & Stepanov's Bug2 for our noisy ultrasonic sensors (pilot revision: five sensors). It also knows
+// where it is: it uses roverPos, startPos and goalPos from the Observation (state this in the paper). The M-line is the
+// straight line from the start point to the goal. Numbers are in Bug2Params. Every sensor is smoothed with a median filter.
 //   GO_TO_GOAL : steer towards the goal along the M-line. Front < 0.30 m -> remember the hit point (and its distance to
 //                the goal) and switch to FOLLOW_WALL.
-//   FOLLOW_WALL: keep the obstacle on the RIGHT at 0.25 m (proportional steering on the right sensor); turn left on the spot
-//                if front < 0.30 m. WALL LOST (right reading > 0.60 m, an outside corner): 50% speed, turn right at 60% until the
-//                right reading is back under 0.60 m. Leave when back on the M-line (within 0.05 m) AND at least 0.10 m closer to the goal than
-//                the hit point AND the front is clear. If it gets back to the hit point after travelling more than 1 m,
-//                the goal is unreachable.
+//   FOLLOW_WALL: keep the obstacle on the RIGHT at 0.25 m (proportional steering on the right SIDE sensor, 90 deg); turn
+//                left on the spot if front < 0.30 m (this has priority). WALL LOST (right side reading > 0.60 m, an outside
+//                corner): drive STRAIGHT at 50% speed for 0.20 m (one body length: the side sensor is mid-body, the front
+//                of the body is already past the corner), then turn right at 60% until the wall is found again (right side
+//                reading <= 0.60 m), then normal wall following resumes. Leave when back on the M-line (within 0.05 m) AND
+//                at least 0.10 m closer to the goal than the hit point AND the front is clear. If it gets back to the
+//                hit point after travelling more than 1 m, the goal is unreachable.
 //   UNREACHABLE: stop (the run continues until the time limit). Positive turn = LEFT.
 using UnityEngine;
 
@@ -15,9 +17,14 @@ public class Bug2Controller : IRoverController, IControllerGizmos
 {
     public enum State { GoToGoal, FollowWall, Unreachable }
 
+    // inside FOLLOW_WALL: normal wall following, driving straight past a lost wall, or turning right to find the wall again
+    enum WallPhase { Following, Advancing, Turning }
+
     Bug2Params p;
     State state;
-    Median front = new Median(), left = new Median(), right = new Median();
+    WallPhase phase;
+    Vector2 lostPos;            // where the wall was lost (start of the straight advance)
+    Median front = new Median(), left = new Median(), right = new Median(), leftSide = new Median(), rightSide = new Median();
 
     Vector2 hitPoint;           // where the current/last wall-following started
     float hitGoalDistance;      // distance from the hit point to the goal
@@ -30,12 +37,15 @@ public class Bug2Controller : IRoverController, IControllerGizmos
     public string Name => "Bug2";
     public State CurrentState => state;
     public string StateName => state == State.GoToGoal ? "GO_TO_GOAL" : state == State.FollowWall ? "FOLLOW_WALL" : "UNREACHABLE";
+    public string PhaseName => phase == WallPhase.Following ? "following" : phase == WallPhase.Advancing ? "wall lost: driving straight" : "wall lost: turning right";
 
     public void ResetController()
     {
         p = Bug2Params.Load();
         state = State.GoToGoal;
         front.Reset(p.medianWindow); left.Reset(p.medianWindow); right.Reset(p.medianWindow);
+        leftSide.Reset(p.medianWindow); rightSide.Reset(p.medianWindow);
+        phase = WallPhase.Following;
         hasHit = false;
         pathSinceHit = 0f;
         hasObs = false;
@@ -47,10 +57,13 @@ public class Bug2Controller : IRoverController, IControllerGizmos
         lastObs = obs;
         hasObs = true;
 
-        // smooth every sensor (the left one is smoothed too, but Bug2 as specified does not use it)
+        // smooth every sensor with the median filter; Bug2 uses front and the right SIDE sensor (the 45 deg and the left
+        // side sensors are smoothed too, but Bug2 as specified does not use them)
         float f = front.Push(obs.front);
         left.Push(obs.left);
-        float r = right.Push(obs.right);
+        right.Push(obs.right);
+        leftSide.Push(obs.leftSide);
+        float rs = rightSide.Push(obs.rightSide);
 
         switch (state)
         {
@@ -63,7 +76,8 @@ public class Bug2Controller : IRoverController, IControllerGizmos
                     hasHit = true;
                     pathSinceHit = 0f;
                     lastPos = obs.roverPos;
-                    return FollowWall(f, r);
+                    phase = WallPhase.Following;
+                    return FollowWall(f, rs, obs);
                 }
                 return GoToGoal(obs);
 
@@ -84,9 +98,10 @@ public class Bug2Controller : IRoverController, IControllerGizmos
                     && f > p.frontClearDistance)
                 {
                     state = State.GoToGoal;
+                    phase = WallPhase.Following;
                     return GoToGoal(obs);
                 }
-                return FollowWall(f, r);
+                return FollowWall(f, rs, obs);
 
             default:
                 return (0f, 0f);
@@ -99,15 +114,39 @@ public class Bug2Controller : IRoverController, IControllerGizmos
         return (p.goSpeed, Mathf.Clamp(obs.goalAngleDeg / p.goalAngleForFullTurnDeg, -1f, 1f));
     }
 
-    (float, float) FollowWall(float frontReading, float rightReading)
+    (float, float) FollowWall(float frontReading, float rightSideReading, Observation obs)
     {
-        if (frontReading < p.hitDistance) return (0f, 1f);          // wall ahead: stop and turn left (wall stays on the right)
-        // Wall lost at an outside corner (right reading above 0.60 m): slow down and turn right at a moderate rate until the
-        // right sensor sees the wall again (reading back under 0.60 m), then normal wall following resumes by itself.
-        // Added because the textbook algorithm assumes continuous wall contact, which a sonar on a rover does not give.
-        if (rightReading > p.lostWallDistance) return (p.lostWallSpeed, -p.lostWallTurn);
-        // wall too far on the right (reading above 0.25) -> steer right (negative); too close -> steer left
-        float turn = Mathf.Clamp(p.wallGain * (p.wallDistance - rightReading), -1f, 1f);
+        // wall ahead: stop and turn left (the wall stays on the right). Has priority over everything else.
+        if (frontReading < p.hitDistance)
+        {
+            phase = WallPhase.Following;
+            return (0f, 1f);
+        }
+
+        // Wall lost at an outside corner. The textbook algorithm assumes continuous wall contact, which a sonar on a rover
+        // does not give. The side sensor sits at the middle of the body, so when it loses the wall the front half of the
+        // body is already past the corner: drive straight one body length (0.20 m) so the whole body clears the corner,
+        // then turn right until the side sensor sees the wall again.
+        bool wallSeen = rightSideReading <= p.lostWallDistance;
+        if (phase == WallPhase.Following && !wallSeen)
+        {
+            phase = WallPhase.Advancing;
+            lostPos = obs.roverPos;
+        }
+        if (phase == WallPhase.Advancing)
+        {
+            if (wallSeen) phase = WallPhase.Following;                                    // the wall came back
+            else if (Vector2.Distance(obs.roverPos, lostPos) >= p.lostWallAdvance) phase = WallPhase.Turning;
+            else return (p.lostWallSpeed, 0f);                                            // straight, 50% speed
+        }
+        if (phase == WallPhase.Turning)
+        {
+            if (wallSeen) phase = WallPhase.Following;                                    // wall found again
+            else return (p.lostWallSpeed, -p.lostWallTurn);                               // turn right at 60%
+        }
+
+        // normal wall following: reading above 0.25 (too far) -> steer right (negative); too close -> steer left
+        float turn = Mathf.Clamp(p.wallGain * (p.wallDistance - rightSideReading), -1f, 1f);
         return (p.wallSpeed, turn);
     }
 
@@ -142,7 +181,7 @@ public class Bug2Controller : IRoverController, IControllerGizmos
         Gizmos.color = c;
         Gizmos.DrawSphere(rover, 0.04f);
 #if UNITY_EDITOR
-        string text = "Bug2: " + StateName;
+        string text = "Bug2: " + StateName + (state == State.FollowWall ? " (" + PhaseName + ")" : "");
         if (hasHit) text += "\nhit point " + hitPoint.ToString("0.00") + ", " + hitGoalDistance.ToString("0.00") + " m from goal";
         UnityEditor.Handles.Label(rover + Vector3.up * 0.1f, text);
 #endif

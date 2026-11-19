@@ -11,7 +11,9 @@ algorithm on the same simulated rover. Results must be real, reproducible and fa
   velocity control (no wheel physics). Max speed 0.3 m/s, max turn rate 90 deg/s.
   No reversing.
 - Sign conventions: positive turn = turn LEFT; positive goal angle = goal is to the LEFT.
-- Sensors: 3 ultrasonic sensors at 0 deg (front), +45 deg (left), -45 deg (right).
+- Sensors (pilot revision 2026-11-20: 5 sensors, was 3): ultrasonic sensors at 0 deg (front),
+  +45 deg (left), -45 deg (right), all at the middle of the front face, and +90 deg (left side),
+  -90 deg (right side), at the middle of each side of the body.
   Each casts 5 rays in a +-15 deg cone, reading = shortest hit. Range 0.02-4.0 m
   (no hit = 4.0). Update 20 Hz. Noise: reading = true x (1 + e), e ~ Normal(0, noise^2),
   noise in {0, 0.02, 0.05, 0.10}. Dropout probability 0.02 (returns 4.0).
@@ -26,12 +28,14 @@ algorithm on the same simulated rover. Results must be real, reproducible and fa
   heading = facing the goal, turned by a uniform goal angle within +-45 deg (positive = goal to the LEFT).
   The trial seed goes through an integer hash before it seeds System.Random (plain consecutive seeds
   give a regular lattice, not random poses). The 30 poses are in results/start_poses.csv.
-- Every controller gets the same inputs: front, left, right readings, goal distance,
-  goal angle. (Bug2 additionally uses rover position - must be stated in the paper.)
+- Every controller gets the same inputs: front, left, right, leftSide, rightSide readings,
+  goal distance, goal angle. (Bug2 additionally uses rover position - must be stated in the paper.)
 
 ## Rules
 - LLM-written controllers (folder Assets/Scripts/Controllers/LLM) are study subjects.
   NEVER edit, fix or improve them, except renaming the class to match the file name.
+- BASELINES ARE FROZEN (pilot revision, 2026-11-20): RuleBasedController, Bug2Controller, RuleParams and
+  Bug2Params must not be changed any more (docs/reports/pilot_revision.md lists their exact file versions).
 - All fixed numbers live in a ScriptableObject called SimConfig, never hard-coded.
 - Build one step at a time. After each step, explain what you did in simple words;
   the user is a mechanical engineer, new to robotics software.

@@ -340,6 +340,51 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!1 &482632453244949941
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4535300757115048272}
+  - component: {fileID: 7132425496649488100}
+  m_Layer: 0
+  m_Name: Sensor_LeftSide
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4535300757115048272
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 482632453244949941}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 7169352950697091120}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &7132425496649488100
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 482632453244949941}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 56418cb6344d8b24ba7dd3b3aeccc498, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UltrasonicSensor
+  config: {fileID: 0}
 --- !u!1 &541122083889393796
 GameObject:
   m_ObjectHideFlags: 0
@@ -372,6 +417,51 @@ Transform:
   - {fileID: 7320589900685820941}
   m_Father: {fileID: 3746738542310954490}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &716089940459683326
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8768447076075552143}
+  - component: {fileID: 1743675633124958922}
+  m_Layer: 0
+  m_Name: Sensor_RightSide
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8768447076075552143
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 716089940459683326}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 7169352950697091120}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1743675633124958922
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 716089940459683326}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 56418cb6344d8b24ba7dd3b3aeccc498, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UltrasonicSensor
+  config: {fileID: 0}
 --- !u!1 &914333435833016585
 GameObject:
   m_ObjectHideFlags: 0
@@ -5290,6 +5380,8 @@ Transform:
   - {fileID: 1697191357190184453}
   - {fileID: 8008864169419129218}
   - {fileID: 5220925776182729918}
+  - {fileID: 4535300757115048272}
+  - {fileID: 8768447076075552143}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!65 &3774811003839261400
@@ -5380,6 +5472,8 @@ MonoBehaviour:
   front: {fileID: 6029677718786056512}
   left: {fileID: 1096115266804633748}
   right: {fileID: 8336758979321203582}
+  leftSide: {fileID: 7132425496649488100}
+  rightSide: {fileID: 1743675633124958922}
   noiseLevel: 0.05
 --- !u!114 &3513382036398256232
 MonoBehaviour:

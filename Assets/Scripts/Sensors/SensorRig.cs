@@ -1,14 +1,17 @@
-// SensorRig: the rover's three ultrasonic sensors (front 0 deg, left +45, right -45, mounted at the middle of the
-// front face). It owns the ONE seeded System.Random shared by all sensors, sets the noise level, and ticks the
-// sensors in a fixed order every physics step so runs are reproducible. Controllers call GetReadings().
+// SensorRig: the rover's five ultrasonic sensors. Three at the middle of the FRONT face: front 0 deg, left +45, right -45.
+// Two at the middle of each SIDE of the body: left side +90, right side -90 (added in the pilot revision). It owns the ONE
+// seeded System.Random shared by all sensors, sets the noise level, and ticks the sensors in a fixed order every physics
+// step so runs are reproducible. Controllers get the readings through GetReadings().
 using UnityEngine;
 
 [RequireComponent(typeof(RoverDrive))]
 public class SensorRig : MonoBehaviour
 {
-    public UltrasonicSensor front;   // mounting angle sensorAnglesDeg[0] = 0
-    public UltrasonicSensor left;    // sensorAnglesDeg[1] = +45 (positive = LEFT)
-    public UltrasonicSensor right;   // sensorAnglesDeg[2] = -45
+    public UltrasonicSensor front;       // mounting angle sensorAnglesDeg[0] = 0
+    public UltrasonicSensor left;        // sensorAnglesDeg[1] = +45 (positive = LEFT)
+    public UltrasonicSensor right;       // sensorAnglesDeg[2] = -45
+    public UltrasonicSensor leftSide;    // sensorAnglesDeg[3] = +90, on the left side of the body
+    public UltrasonicSensor rightSide;   // sensorAnglesDeg[4] = -90, on the right side of the body
 
     [SerializeField] float noiseLevel = 0.05f;   // one of SimConfig.noiseLevels (0, 0.02, 0.05, 0.10)
 
@@ -16,7 +19,7 @@ public class SensorRig : MonoBehaviour
     int seed;
     RoverDrive drive;
 
-    /// <summary>Noise standard deviation as a fraction of the true distance. Applies to all three sensors.</summary>
+    /// <summary>Noise standard deviation as a fraction of the true distance. Applies to all five sensors.</summary>
     public float NoiseLevel
     {
         get => noiseLevel;
@@ -37,10 +40,10 @@ public class SensorRig : MonoBehaviour
         Setup();
     }
 
-    /// <summary>Latest readings in metres: front, left, right.</summary>
-    public (float front, float left, float right) GetReadings()
+    /// <summary>Latest readings in metres: front, left (+45), right (-45), left side (+90), right side (-90).</summary>
+    public (float front, float left, float right, float leftSide, float rightSide) GetReadings()
     {
-        return (front.LastReading, left.LastReading, right.LastReading);
+        return (front.LastReading, left.LastReading, right.LastReading, leftSide.LastReading, rightSide.LastReading);
     }
 
     void Awake()
@@ -56,16 +59,19 @@ public class SensorRig : MonoBehaviour
         if (drive == null) drive = GetComponent<RoverDrive>();
         var cfg = drive.config;
         if (cfg == null || front == null || left == null || right == null) return;
-        if (cfg.sensorAnglesDeg.Length < 3) { Debug.LogError("SimConfig.sensorAnglesDeg needs 3 angles", this); return; }
+        if (leftSide == null || rightSide == null) { Debug.LogError("SensorRig: leftSide / rightSide sensors are not assigned", this); return; }
+        if (cfg.sensorAnglesDeg.Length < 5) { Debug.LogError("SimConfig.sensorAnglesDeg needs 5 angles", this); return; }
 
         if (rng == null) rng = new System.Random(seed);       // default seed 0 until SetSeed is called
 
-        Mount(front, cfg, cfg.sensorAnglesDeg[0]);
-        Mount(left, cfg, cfg.sensorAnglesDeg[1]);
-        Mount(right, cfg, cfg.sensorAnglesDeg[2]);
+        MountFront(front, cfg, cfg.sensorAnglesDeg[0]);
+        MountFront(left, cfg, cfg.sensorAnglesDeg[1]);
+        MountFront(right, cfg, cfg.sensorAnglesDeg[2]);
+        MountSide(leftSide, cfg, cfg.sensorAnglesDeg[3]);
+        MountSide(rightSide, cfg, cfg.sensorAnglesDeg[4]);
     }
 
-    void Mount(UltrasonicSensor s, SimConfig cfg, float angleDeg)
+    void MountFront(UltrasonicSensor s, SimConfig cfg, float angleDeg)
     {
         // middle of the front face, at body mid-height; positive angle = LEFT, and Unity's +Y rotation turns right
         s.transform.localPosition = new Vector3(0f, 0f, cfg.roverLength * 0.5f);
@@ -73,14 +79,26 @@ public class SensorRig : MonoBehaviour
         s.Initialize(cfg, rng, noiseLevel);
     }
 
+    void MountSide(UltrasonicSensor s, SimConfig cfg, float angleDeg)
+    {
+        // middle of the side of the body (halfway along its length), at body mid-height, looking sideways.
+        // In the rover's own axes +x is to the RIGHT, so a LEFT sensor (positive angle) sits at -x.
+        float x = angleDeg > 0f ? -cfg.roverWidth * 0.5f : cfg.roverWidth * 0.5f;
+        s.transform.localPosition = new Vector3(x, 0f, 0f);
+        s.transform.localRotation = Quaternion.Euler(0f, -angleDeg, 0f);
+        s.Initialize(cfg, rng, noiseLevel);
+    }
+
     void FixedUpdate()
     {
-        if (drive == null || drive.config == null || front == null) return;
+        if (drive == null || drive.config == null || front == null || leftSide == null || rightSide == null) return;
         double dt = Time.fixedDeltaTime;
         // fixed order => the shared random stream is always consumed in the same order
         front.Tick(dt);
         left.Tick(dt);
         right.Tick(dt);
+        leftSide.Tick(dt);
+        rightSide.Tick(dt);
     }
 
     System.Collections.Generic.IEnumerable<UltrasonicSensor> Sensors()
@@ -88,5 +106,7 @@ public class SensorRig : MonoBehaviour
         yield return front;
         yield return left;
         yield return right;
+        yield return leftSide;
+        yield return rightSide;
     }
 }

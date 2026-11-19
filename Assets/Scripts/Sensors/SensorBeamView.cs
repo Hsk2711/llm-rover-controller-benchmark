@@ -38,13 +38,13 @@ public class SensorBeamView : MonoBehaviour
             gWasDown = down;
         }
 
-        if (!aidsOn || !visible || rig == null || rig.front == null || rig.left == null || rig.right == null)
+        if (!aidsOn || !visible || rig == null || rig.front == null || rig.left == null || rig.right == null || rig.leftSide == null || rig.rightSide == null)
         {
             SetAllEnabled(false);
             return;
         }
 
-        var sensors = new[] { rig.front, rig.left, rig.right };
+        var sensors = new[] { rig.front, rig.left, rig.right, rig.leftSide, rig.rightSide };
         EnsureLines(sensors, cfg);
         for (int s = 0; s < sensors.Length; s++)
         {

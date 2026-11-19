@@ -6,7 +6,7 @@ public class RoverHud : MonoBehaviour
 {
     public RoverStatus status;
     public RoverDrive drive;
-    public SensorRig sensors;                   // optional: adds the three range readings
+    public SensorRig sensors;                   // optional: adds the five range readings
     public UnityEngine.UI.Text text;
 
     Canvas canvas;
@@ -38,7 +38,9 @@ public class RoverHud : MonoBehaviour
             text.text +=
                 "\nFront: " + r.front.ToString("0.00") + " m" +
                 "\nLeft: " + r.left.ToString("0.00") + " m" +
-                "\nRight: " + r.right.ToString("0.00") + " m";
+                "\nRight: " + r.right.ToString("0.00") + " m" +
+                "\nLeft side: " + r.leftSide.ToString("0.00") + " m" +
+                "\nRight side: " + r.rightSide.ToString("0.00") + " m";
         }
 
         var host = drive.GetComponent<ControllerHost>();

@@ -26,8 +26,9 @@ public class SimConfig : ScriptableObject
     public bool allowReversing = false;   // no reversing
 
     [Header("Ultrasonic sensors")]
-    // Mounting angles in degrees: 0 = front, +45 = left, -45 = right.
-    public float[] sensorAnglesDeg = { 0f, 45f, -45f };
+    // Mounting angles in degrees: 0 = front, +45 = left, -45 = right (all three at the middle of the front face), then
+    // +90 = left side and -90 = right side (at the middle of each side of the body). Five sensors in total.
+    public float[] sensorAnglesDeg = { 0f, 45f, -45f, 90f, -90f };
     public int raysPerSensor = 5;
     public float coneHalfAngleDeg = 15f;  // rays spread over +-this angle; reading = shortest hit
     public float minRange = 0.02f;        // m

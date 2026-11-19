@@ -30,6 +30,8 @@ MonoBehaviour:
   - 0
   - 45
   - -45
+  - 90
+  - -90
   raysPerSensor: 5
   coneHalfAngleDeg: 15
   minRange: 0.02

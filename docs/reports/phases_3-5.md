@@ -5,6 +5,10 @@ Scope: Phase 3 (four test maps and repeatable starts), Phase 4 (controller plug 
 
 ## 0. Read this first (what this report can and cannot claim)
 
+- **Superseded in part (2026-11-20).** This report describes the **3-sensor platform** and the baselines as they were then. A pilot revision
+  (5 sensors, changed Bug2 wall-lost rule, rule-based side rule, baselines then frozen) is documented in `docs/reports/pilot_revision.md`.
+  The test-map results below belong to the old platform and old baselines.
+
 - **Commit status.** Phase 3 is committed (`5f5e43e` visual fixes, `512541e` maps, `680623b` TrialSpawner/pictures) and ticked in
   `docs/PROGRESS.md`. Phases 4 and 5 were first committed in `06c9620` (WIP) and are ticked in `docs/PROGRESS.md` in the commit that adds the Bug2 wall-lost rule (section 4.6). Ticked means "built and tested", not "Bug2 succeeds": see 4.5.
 - **"What happened when I watched".** I (the assistant) do not have your own observations. Section 3.5 and 4.5 report what *I*

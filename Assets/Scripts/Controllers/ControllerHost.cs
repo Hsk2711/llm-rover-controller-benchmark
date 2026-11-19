@@ -136,6 +136,8 @@ public class ControllerHost : MonoBehaviour
         obs.front = readings.front;
         obs.left = readings.left;
         obs.right = readings.right;
+        obs.leftSide = readings.leftSide;
+        obs.rightSide = readings.rightSide;
         obs.goalDistance = toGoal.magnitude;
         // Vector2.SignedAngle is counter-clockwise positive in the (x east, z north) plane = toward the LEFT of the heading
         obs.goalAngleDeg = toGoal.sqrMagnitude < 1e-12f ? 0f : Vector2.SignedAngle(forward, toGoal);

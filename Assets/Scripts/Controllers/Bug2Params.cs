@@ -8,7 +8,7 @@ public class Bug2Params : ScriptableObject
 {
     [Header("As specified")]
     public float hitDistance = 0.30f;            // front < this: obstacle hit (go to goal -> follow wall); also: turn left while following
-    public float wallDistance = 0.25f;           // keep the wall on the right at this distance (right sensor)
+    public float wallDistance = 0.25f;           // keep the wall on the right at this distance (right SIDE sensor, 90 deg)
     public float mLineTolerance = 0.05f;         // "back on the M-line": within this distance of the start-goal line
     public float progressMargin = 0.10f;         // leave the wall only if at least this much closer to the goal than the hit point
     public float loopPathLength = 1.0f;          // back at the hit point after travelling more than this: goal unreachable
@@ -22,10 +22,11 @@ public class Bug2Params : ScriptableObject
     public float goalAngleForFullTurnDeg = 45f;  // go to goal: turn = goalAngle / this, clamped to -1..1
     public float hitReturnRadius = 0.15f;        // "back at the hit point" = within this distance of it
 
-    [Header("Wall-lost rule (added; the textbook algorithm assumes continuous wall contact)")]
-    public float lostWallDistance = 0.60f;       // FOLLOW_WALL: right reading above this = the wall is lost (outside corner)
-    public float lostWallSpeed = 0.5f;           // while the wall is lost: 50% speed
-    public float lostWallTurn = 0.6f;            // while the wall is lost: turn RIGHT at 60% of the max turn rate
+    [Header("Wall-lost rule (pilot revision; the textbook algorithm assumes continuous wall contact)")]
+    public float lostWallDistance = 0.60f;       // FOLLOW_WALL: right SIDE reading above this = the wall is lost (outside corner)
+    public float lostWallSpeed = 0.5f;           // while the wall is lost (straight part and turning part): 50% speed
+    public float lostWallAdvance = 0.20f;        // drive straight this far first (one body length), then turn
+    public float lostWallTurn = 0.6f;            // then turn RIGHT at 60% of the max turn rate until the wall is found again
 
     public const string ResourceName = "Bug2Params";
 

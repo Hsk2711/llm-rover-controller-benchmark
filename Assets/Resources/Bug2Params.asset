@@ -26,4 +26,5 @@ MonoBehaviour:
   hitReturnRadius: 0.15
   lostWallDistance: 0.6
   lostWallSpeed: 0.5
+  lostWallAdvance: 0.2
   lostWallTurn: 0.6

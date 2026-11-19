@@ -2,9 +2,10 @@
 // Three rules, checked in this order (numbers are in RuleParams; positive turn = LEFT):
 //   1. Front obstacle: front < 0.30 m -> stop and turn on the spot, at full turn rate, towards the side (left or right
 //      sensor) with more space. Keep turning that way until front > 0.45 m (so it does not wobble back and forth).
-//   2. Side obstacle: left or right < 0.20 m -> 50% speed and steer away from that side.
+//   2. Side obstacle: on each side the SMALLER of the 45 deg and the 90 deg (side) reading < 0.20 m -> 50% speed and steer
+//      away from that side (pilot revision: the 90 deg side sensors were added; same threshold, same actions).
 //   3. Otherwise: full speed, turn = clamp(goalAngle / 45 deg, -1, 1) to steer towards the goal.
-// It uses only front, left, right and the goal angle. It remembers one thing: whether it is in the middle of a turn (rule 1).
+// It uses only front, left, right, leftSide, rightSide and the goal angle. It remembers one thing: whether it is in the middle of a turn (rule 1).
 using UnityEngine;
 
 public class RuleBasedController : IRoverController
@@ -36,11 +37,13 @@ public class RuleBasedController : IRoverController
         if (escaping) return (0f, escapeDir * p.escapeTurn);
 
         // Rule 2: side obstacle. A close LEFT obstacle -> steer right (negative); a close RIGHT obstacle -> steer left.
-        bool leftClose = obs.left < p.sideDistance;
-        bool rightClose = obs.right < p.sideDistance;
+        float leftNear = Mathf.Min(obs.left, obs.leftSide);       // smaller of the 45 deg and the 90 deg reading
+        float rightNear = Mathf.Min(obs.right, obs.rightSide);
+        bool leftClose = leftNear < p.sideDistance;
+        bool rightClose = rightNear < p.sideDistance;
         if (leftClose || rightClose)
         {
-            bool steerRight = leftClose && (!rightClose || obs.left <= obs.right);   // both close: avoid the nearer one
+            bool steerRight = leftClose && (!rightClose || leftNear <= rightNear);   // both close: avoid the nearer one
             return (p.sideSpeed, steerRight ? -p.sideTurn : p.sideTurn);
         }
 
