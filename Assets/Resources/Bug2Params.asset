@@ -24,3 +24,6 @@ MonoBehaviour:
   wallGain: 4
   goalAngleForFullTurnDeg: 45
   hitReturnRadius: 0.15
+  lostWallDistance: 0.6
+  lostWallSpeed: 0.5
+  lostWallTurn: 0.6

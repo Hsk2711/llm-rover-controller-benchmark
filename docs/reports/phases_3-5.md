@@ -6,7 +6,7 @@ Scope: Phase 3 (four test maps and repeatable starts), Phase 4 (controller plug 
 ## 0. Read this first (what this report can and cannot claim)
 
 - **Commit status.** Phase 3 is committed (`5f5e43e` visual fixes, `512541e` maps, `680623b` TrialSpawner/pictures) and ticked in
-  `docs/PROGRESS.md`. **Phases 4 and 5 are NOT committed and NOT ticked** (the Bug2 corner problem in section 4.6 is an open decision).
+  `docs/PROGRESS.md`. Phases 4 and 5 were first committed in `06c9620` (WIP) and are ticked in `docs/PROGRESS.md` in the commit that adds the Bug2 wall-lost rule (section 4.6). Ticked means "built and tested", not "Bug2 succeeds": see 4.5.
 - **"What happened when I watched".** I (the assistant) do not have your own observations. Section 3.5 and 4.5 report what *I*
   observed: one live watched run (rule-based, M1, seed 1) and a headless batch of both controllers on all four maps. Fields for your own
   observations are left marked `[your notes]`.
@@ -150,9 +150,11 @@ Scene view: magenta M-line start-goal, red hit point (grey after leaving the wal
 ### 4.2 Parameters (`Bug2Params`, standard values, not tuned)
 As specified by you: hit distance 0.30 m; wall distance 0.25 m (right sensor); M-line tolerance 0.05 m; progress margin 0.10 m; loop path length 1.0 m; median window 3.
 Left open by the brief (my choices): front clear 0.45 m; go-to-goal speed 1.0; wall-follow speed 0.5; wall gain 4 (turn per metre of error, so a 0.25 m error is a full turn); goal angle for full turn 45 deg; hit-point return radius 0.15 m; stop-and-turn-left in place (speed 0) when front < 0.30 m while following.
+**Wall-lost rule (added later at the author's request; values in `Bug2Params`):** `lostWallDistance` 0.60 m, `lostWallSpeed` 0.5, `lostWallTurn` 0.6. In FOLLOW_WALL, if the (median-filtered) right reading is above 0.60 m: 50% speed and turn right at 60% of the max turn rate until the reading is back under 0.60 m, then normal wall following resumes. Front < 0.30 m still takes priority. It was added because the textbook Bug2 algorithm assumes continuous wall contact, which a sonar on a rover does not give.
 Logic: GO_TO_GOAL: turn = clamp(goalAngle/45, -1, 1); front (median) < 0.30 -> FOLLOW_WALL, store hit point and its goal distance. FOLLOW_WALL: turn = clamp(4 x (0.25 - right), -1, 1); leave when within 0.05 m of the M-line AND at least 0.10 m closer to the goal than the hit point AND front > 0.45; back within 0.15 m of the hit point after more than 1 m driven -> UNREACHABLE (stop). The left sensor is smoothed but not used.
 
 ### 4.3 Decisions
+The wall-lost rule (4.2) was added after the first four-map result (section 4.5, first table) and after the diagnosis in 4.4. It is the author's decision, justified by the textbook assumption of continuous wall contact, not by tuning on the test maps. Its values (0.60 m, 50%, 60%) are the author's and were not changed after seeing results.
 Bug2 uses rover, start and goal position (the one controller with extra knowledge; state this in the paper). Median filter latency: two consecutive low front readings are needed to trigger a hit (one spike is ignored by design).
 
 ### 4.4 Test results
@@ -178,8 +180,20 @@ Headless batch (mine): trial seeds 1-5, noise 0.05. **Goal reached: 0 of 20.** V
 
 Your own observations: `[your notes]`.
 
-### 4.6 Open decision (needs you)
-As specified, Bug2 cannot round a convex corner with these sensors. Options: (1) keep it as specified and report it; (2) add a documented rule such as a limited turn when the wall is lost (the 0.2 cap worked on simple maps); (3) drive straight a short distance before turning at a lost wall. Because both baselines have now been seen on the test maps, whichever option is chosen should be justified on the practice and synthetic maps and on the geometry, not on the test-map outcomes.
+#### 4.5b With the wall-lost rule (final Bug2 as committed)
+Test: all four maps, **3 tries each** (trial seeds 1, 2, 3), sensor noise 0.05, 8x speed, exploratory. **Goal reached: 0 of 12.** 0 exceptions.
+
+| Map | Tries | Outcome | Time (s), seeds 1/2/3 | Same seeds without the rule (s) | State at collision |
+|---|---|---|---|---|---|
+| M1_Open | 3 | 3 collisions, **no goal** | 9.0 / 10.3 / 9.2 | 8.9 / 10.3 / 9.2 | FOLLOW_WALL |
+| M2_Cluttered | 3 | 3 collisions, **no goal** | 11.6 / 19.2 / 11.7 | 11.6 / 19.2 / 11.7 | GO_TO_GOAL, FOLLOW_WALL, GO_TO_GOAL |
+| M3_Corridor | 3 | 3 collisions, **no goal** | 10.2 / 11.4 / 10.3 | 10.1 / 11.4 / 10.2 | FOLLOW_WALL |
+| M4_Trap | 3 | 3 collisions, **no goal** | 24.2 / 25.2 / 24.2 | 24.2 / 25.2 / 24.2 | FOLLOW_WALL |
+
+The rule changed the outcome of no run (times differ by at most 0.1 s). A live trace (M1, seed 1, 0.1 s steps) shows the rule firing: at t = 8.0-8.2 s and 8.5-8.6 s the right reading is above 0.60 m and the command is speed 0.5, turn -0.60. But at t = 8.3 s the right sensor suddenly sees the next face of the rotated box at 0.16 m (0.13 m at 8.4 s) and the rover collides at 9.0 s. A 60% turn at 0.15 m/s is an arc of radius about 0.15 / (0.6 x 1.571) = 0.16 m, which swings the front of the 0.2 m rover onto the next face. Also, below 0.60 m the proportional term (gain 4) already commands -0.8 to -1.0 for readings 0.45-0.60 m, so the rule only softens the turn in the range above 0.60 m. The earlier temporary experiment (4.4) found a cap of 0.4 failed and 0.2 succeeded on the simple maps.
+
+### 4.6 Decision history
+The wall-lost rule was added as the author decided (above). Because it did not fix the corner collisions, the open question is whether to keep it as is and report Bug2's failure, or to change the rule. Earlier options were: (1) keep it as specified and report it; (2) add a documented rule such as a limited turn when the wall is lost (the 0.2 cap worked on simple maps); (3) drive straight a short distance before turning at a lost wall. Because both baselines have now been seen on the test maps, whichever option is chosen should be justified on the practice and synthetic maps and on the geometry, not on the test-map outcomes.
 
 ## 5. Answers to the explanation questions asked in chat
 
@@ -193,7 +207,7 @@ A paired comparison tests two things under identical conditions, like two tyres 
 
 ## 6. Caveats
 - Batch results are one noise level, five seeds, 8x speed, exploratory; the real results come from Phase 7.
-- Phase 4 and 5 code is uncommitted; `docs/PROGRESS.md` still shows them unticked.
+- Phases 4 and 5 are ticked in `docs/PROGRESS.md` as built and tested. Bug2 with the wall-lost rule reaches the goal in 0 of 12 exploratory tries on the four test maps; any further change to it is an open author decision and must not be justified by those test-map outcomes.
 - Rover and sensor geometry make convex corners hard for any controller that reacts only when the wall is lost; this is a property of the setup and should be discussed in the paper, not hidden.
 
 ## Appendix A - every obstacle of the four test maps

@@ -22,6 +22,11 @@ public class Bug2Params : ScriptableObject
     public float goalAngleForFullTurnDeg = 45f;  // go to goal: turn = goalAngle / this, clamped to -1..1
     public float hitReturnRadius = 0.15f;        // "back at the hit point" = within this distance of it
 
+    [Header("Wall-lost rule (added; the textbook algorithm assumes continuous wall contact)")]
+    public float lostWallDistance = 0.60f;       // FOLLOW_WALL: right reading above this = the wall is lost (outside corner)
+    public float lostWallSpeed = 0.5f;           // while the wall is lost: 50% speed
+    public float lostWallTurn = 0.6f;            // while the wall is lost: turn RIGHT at 60% of the max turn rate
+
     public const string ResourceName = "Bug2Params";
 
     /// <summary>Load Assets/Resources/Bug2Params.asset; if it is missing, use the default values above.</summary>

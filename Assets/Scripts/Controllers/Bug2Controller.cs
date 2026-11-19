@@ -4,7 +4,8 @@
 //   GO_TO_GOAL : steer towards the goal along the M-line. Front < 0.30 m -> remember the hit point (and its distance to
 //                the goal) and switch to FOLLOW_WALL.
 //   FOLLOW_WALL: keep the obstacle on the RIGHT at 0.25 m (proportional steering on the right sensor); turn left on the spot
-//                if front < 0.30 m. Leave when back on the M-line (within 0.05 m) AND at least 0.10 m closer to the goal than
+//                if front < 0.30 m. WALL LOST (right reading > 0.60 m, an outside corner): 50% speed, turn right at 60% until the
+//                right reading is back under 0.60 m. Leave when back on the M-line (within 0.05 m) AND at least 0.10 m closer to the goal than
 //                the hit point AND the front is clear. If it gets back to the hit point after travelling more than 1 m,
 //                the goal is unreachable.
 //   UNREACHABLE: stop (the run continues until the time limit). Positive turn = LEFT.
@@ -101,6 +102,10 @@ public class Bug2Controller : IRoverController, IControllerGizmos
     (float, float) FollowWall(float frontReading, float rightReading)
     {
         if (frontReading < p.hitDistance) return (0f, 1f);          // wall ahead: stop and turn left (wall stays on the right)
+        // Wall lost at an outside corner (right reading above 0.60 m): slow down and turn right at a moderate rate until the
+        // right sensor sees the wall again (reading back under 0.60 m), then normal wall following resumes by itself.
+        // Added because the textbook algorithm assumes continuous wall contact, which a sonar on a rover does not give.
+        if (rightReading > p.lostWallDistance) return (p.lostWallSpeed, -p.lostWallTurn);
         // wall too far on the right (reading above 0.25) -> steer right (negative); too close -> steer left
         float turn = Mathf.Clamp(p.wallGain * (p.wallDistance - rightReading), -1f, 1f);
         return (p.wallSpeed, turn);

@@ -6,8 +6,8 @@ Checklist of project phases. Update at the end of each phase.
 - [x] Phase 1 - Arena and rover
 - [x] Phase 2 - Ultrasonic sensor model and accuracy test (UltrasonicSensor, SensorRig, SensorTest scene, results/sensor_validation.csv)
 - [x] Phase 3 - Four test maps and repeatable starts (MapDefinition, MapLoader, 4 maps, PracticeMapGenerator, TrialSpawner, results/start_poses.csv, Figure 2 pictures)
-- [ ] Phase 4 - Controller plug and rule-based baseline
-- [ ] Phase 5 - Bug2 controller
+- [x] Phase 4 - Controller plug and rule-based baseline (Observation, IRoverController, SafeController, ControllerHost, dropdown, RuleBasedController + RuleParams)
+- [x] Phase 5 - Bug2 controller (Bug2Controller + Bug2Params, wall-lost rule, Scene-view drawing)
 - [ ] Phase 6 - LLM-written controllers (30)
 - [ ] Phase 7 - Experiment runner and overnight run
 - [ ] Phase 8 - Statistics and figures
@@ -101,6 +101,13 @@ Checklist of project phases. Update at the end of each phase.
   Rule-based: collisions on M1, M2, M3 and a 60 s timeout on M4 (trapped inside the U). Bug2: collisions on all four; on M4 it followed
   the U's inside wall to the mouth and hit the tip of the left arm. Details: docs/reports/phases_3-5.md. Any later change to a
   baseline must be justified without using these results.
+  WALL-LOST RULE (added at the author's request, values in Bug2Params, because the textbook algorithm assumes continuous wall
+  contact): in FOLLOW_WALL, right reading above 0.60 m -> 50% speed and turn right at 60% until the right reading is back under
+  0.60 m, then normal wall following resumes. Front < 0.30 m still has priority. Tested on the 4 test maps, trial seeds 1-3,
+  noise 0.05: 0 of 12 reached the goal (all collisions, times within 0.1 s of the runs without the rule). A live trace of M1
+  seed 1 shows the rule firing (speed 0.5, turn -0.60) but the 60% turn (arc radius about 0.16 m) swings the front onto the next
+  face of the box (right reading 0.13-0.16 m a moment later) and the rover collides at 9.0 s. An earlier temporary experiment on
+  simple maps suggested a much gentler turn (cap 0.2) works and 0.4 does not; not applied. Open design decision for the author.
 
 ## Notes for later phases
 
