@@ -2,7 +2,7 @@
 
 Checklist of project phases. Update at the end of each phase.
 
-- [x] Phase 0 - Project setup (Unity project, CLAUDE.md, git, folders, SimConfig; Python venv still pending: Python is not installed yet)
+- [x] Phase 0 - Project setup (Unity project, CLAUDE.md, git, folders, SimConfig, Python 3.12 venv)
 - [ ] Phase 1 - TODO: title from the guide
 - [ ] Phase 2 - TODO: title from the guide
 - [ ] Phase 3 - TODO: title from the guide
