@@ -192,6 +192,11 @@ Checklist of project phases. Update at the end of each phase.
   trial/noise/map for every no-compile controller with success=0 and outcome no_compile, and never try to run it. Note: if OS fails to compile and an FB
   file later compiles, they are two separate controllers (…_OS no_compile, …_FB normal).
 
+## Feedback protocol (2026-11-20)
+
+- Up to 3 feedback rounds per attempt in total (compile-error rounds count); stop early at 10/10. Written into CLAUDE.md (Rules).
+- Status: ChatGPT attempt 1 has used 1 round (the compile error; FB file compiles, Quick Test 3/10), so at most 2 rounds remain.
+
 ## Notes for later phases
 
 - Phase 7: for each trial seed 1-30 call `TrialSpawner.Spawn(seed)` (after `MapLoader.Load(map)`) so every controller starts

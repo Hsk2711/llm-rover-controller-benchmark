@@ -39,6 +39,9 @@ algorithm on the same simulated rover. Results must be real, reproducible and fa
   NEVER edit, fix or improve them, except renaming the class to match the file name.
 - BASELINES ARE FROZEN (pilot revision, 2026-11-20): RuleBasedController, Bug2Controller, RuleParams and
   Bug2Params must not be changed any more (docs/reports/pilot_revision.md lists their exact file versions).
+- FEEDBACK PROTOCOL for LLM attempts: up to 3 feedback rounds per attempt IN TOTAL; a round that only sends back a compile error
+  counts as one of the 3. Stop early as soon as the Quick Test shows 10/10. Each round sends only the exact one-line report from
+  docs/feedback_template.txt (or the compiler error text). Log feedback_rounds and the final score in results/llm_generation_log.csv.
 - LLM files that do NOT compile are moved UNEDITED out of Assets to LLM_NoCompile/ (tools/quarantine_noncompiling.py does it and logs it).
   Their controllers stay in the study: the experiment runner must report them as success=0, outcome "no_compile" in every trial
   (ControllerRegistry.ExperimentEntries()). Never fix them, never drop them.
