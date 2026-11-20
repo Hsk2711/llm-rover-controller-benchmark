@@ -237,3 +237,7 @@ Checklist of project phases. Update at the end of each phase.
 ### ChatGPT attempt 2 - feedback round 3 (final)
 - Round 3 compiles (class renamed only); Quick Test 3/10 (1 collision, 6 timeouts, oscillating). FINAL FB result = 3/10 (last-round rule).
   Scores: OS 9/10, r1 0/10, r2 3/10, r3 3/10. All files in `LLM_History/`. Attempt closed (3 of 3 rounds used). model_version, human_minutes still to fill.
+
+### Gemini attempt 1 - one-shot (OS)
+- LLM_Gemini_1_OS.cs saved (class renamed only), compiles, Check LLM Files OK. Quick Test 10/10. Stop early at 10/10: attempt closed, 0 feedback rounds.
+  Note: its Name property returns "LLM_Controller" (untouched). model_version, human_minutes still to fill.
