@@ -229,3 +229,7 @@ Checklist of project phases. Update at the end of each phase.
 ### ChatGPT attempt 2 - feedback round 1
 - LLM_ChatGPT_2_FB.cs (round 1) compiles, class renamed only; Quick Test 0/10 (1 collision, 9 timeouts, dead end). OS was 9/10.
   Last-round rule: the FB result is 0/10 unless rounds 2-3 change it. Files in `LLM_History/` (LLM_ChatGPT_2_OS.cs, LLM_ChatGPT_2_FB_r1.cs). 1 of 3 rounds used.
+
+### ChatGPT attempt 2 - feedback round 2
+- Round 2 compiles (class renamed only); Quick Test 3/10 (0 collisions, 7 timeouts, oscillating). Rounds so far: OS 9/10, r1 0/10, r2 3/10.
+  Current FB result (last-round rule) 3/10. File `LLM_History/LLM_ChatGPT_2_FB_r2.cs`. 2 of 3 rounds used.
