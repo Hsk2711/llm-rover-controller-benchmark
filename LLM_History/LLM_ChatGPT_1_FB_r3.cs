@@ -6,21 +6,17 @@ public class LLM_ChatGPT_1_FB : IRoverController
 {
     public string Name => "Adaptive Safe Navigation V2";
 
-    // Filtered sensor values
     private float front, left, right, leftSide, rightSide;
 
-    // Three-sample sensor history
     private float[,] history = new float[5, 3];
     private int sampleCount;
     private int sampleIndex;
 
-    // Obstacle avoidance
     private bool avoiding;
     private int avoidDirection;
     private int clearTicks;
     private int avoidTicks;
 
-    // Recovery
     private float previousGoalDistance;
     private int stuckTicks;
     private int recoveryTicks;
@@ -29,7 +25,6 @@ public class LLM_ChatGPT_1_FB : IRoverController
 
     private const float MAX_RANGE = 4.0f;
 
-    // Conservative clearance thresholds
     private const float FRONT_SAFE = 0.95f;
     private const float DIAGONAL_SAFE = 0.65f;
     private const float SIDE_SAFE = 0.30f;
@@ -130,7 +125,6 @@ public class LLM_ChatGPT_1_FB : IRoverController
             );
         }
 
-        // Smooth noise without excessive sensor lag.
         front = front * 0.55f + filtered[0] * 0.45f;
         left = left * 0.55f + filtered[1] * 0.45f;
         right = right * 0.55f + filtered[2] * 0.45f;
@@ -146,7 +140,6 @@ public class LLM_ChatGPT_1_FB : IRoverController
         return angle;
     }
 
-    // Estimate the safety of turning in each direction.
     private float LeftClearance()
     {
         return Mathf.Min(
@@ -168,31 +161,25 @@ public class LLM_ChatGPT_1_FB : IRoverController
         float lc = LeftClearance();
         float rc = RightClearance();
 
-        // Strongly avoid turning into a nearby obstacle.
         if (leftSide < 0.28f && rightSide > 0.40f)
             return -1;
 
         if (rightSide < 0.28f && leftSide > 0.40f)
             return 1;
 
-        // Prefer the direction with more clearance.
         if (lc > rc + 0.12f)
             return 1;
 
         if (rc > lc + 0.12f)
             return -1;
 
-        // Tie-break using goal direction.
         return goalAngle >= 0f ? 1 : -1;
     }
 
-    // Predict danger on the side toward which the rover turns.
     private bool TurnSideDanger(int direction)
     {
         if (direction > 0)
-        {
             return left < 0.48f || leftSide < 0.27f;
-        }
 
         return right < 0.48f || rightSide < 0.27f;
     }
@@ -205,8 +192,6 @@ public class LLM_ChatGPT_1_FB : IRoverController
         float side =
             avoidDirection > 0 ? leftSide : rightSide;
 
-        // If the selected direction is blocked,
-        // switch only when the opposite side is safer.
         if (TurnSideDanger(avoidDirection))
         {
             int opposite = -avoidDirection;
@@ -226,86 +211,74 @@ public class LLM_ChatGPT_1_FB : IRoverController
             }
         }
 
-        float steering = avoidDirection * 0.75f;
+        float result = avoidDirection * 0.75f;
 
-        // Increase turning when the front is blocked.
         if (front < 0.75f)
-            steering = avoidDirection * 0.95f;
+            result = avoidDirection * 0.95f;
 
         if (front < 0.42f)
-            steering = avoidDirection;
+            result = avoidDirection;
 
-        // Maintain distance from the wall.
         if (side < 0.65f)
         {
             float correction =
                 Clamp((0.45f - side) * 1.2f, -0.35f, 0.35f);
 
-            steering += avoidDirection * correction;
+            result += avoidDirection * correction;
         }
 
-        // Obstacle on the selected turning side:
-        // steer away rather than clipping it.
         if (diagonal < 0.35f || side < 0.22f)
-        {
-            steering = -avoidDirection;
-        }
+            result = -avoidDirection;
 
-        return Clamp(steering, -1f, 1f);
+        return Clamp(result, -1f, 1f);
     }
 
-    // Speed control based on clearance and turning angle.
-    private float SafeSpeed(float steering)
+    private float SafeSpeed(float steeringValue)
     {
-        float speed = 0.55f;
+        float resultSpeed = 0.55f;
 
-        // Sharp turns require very low forward speed.
-        float turnAmount = Mathf.Abs(steering);
+        float turnAmount = Mathf.Abs(steeringValue);
 
         if (turnAmount > 0.75f)
-            speed = Mathf.Min(speed, 0.08f);
+            resultSpeed = Mathf.Min(resultSpeed, 0.08f);
         else if (turnAmount > 0.45f)
-            speed = Mathf.Min(speed, 0.15f);
+            resultSpeed = Mathf.Min(resultSpeed, 0.15f);
         else if (turnAmount > 0.25f)
-            speed = Mathf.Min(speed, 0.25f);
+            resultSpeed = Mathf.Min(resultSpeed, 0.25f);
 
-        // Front clearance.
         if (front < 1.20f)
-            speed = Mathf.Min(speed, front * 0.22f);
+            resultSpeed = Mathf.Min(resultSpeed, front * 0.22f);
 
-        // Diagonal clearance.
         float nearestDiagonal = Mathf.Min(left, right);
 
         if (nearestDiagonal < 0.80f)
         {
-            speed = Mathf.Min(
-                speed,
+            resultSpeed = Mathf.Min(
+                resultSpeed,
                 nearestDiagonal * 0.22f
             );
         }
 
-        // Side clearance during rotation.
         float nearestSide = Mathf.Min(leftSide, rightSide);
 
         if (nearestSide < 0.45f)
         {
-            speed = Mathf.Min(
-                speed,
+            resultSpeed = Mathf.Min(
+                resultSpeed,
                 nearestSide * 0.20f
             );
         }
 
-        // Emergency stopping.
         if (front < 0.35f ||
             left < 0.25f ||
             right < 0.25f ||
             leftSide < 0.16f ||
             rightSide < 0.16f)
         {
-            speed = 0f;
+            resultSpeed = 0f;
         }
 
-        return Clamp(speed, 0f, 0.55f);
+        return Clamp(resultSpeed, 0f, 0.55f);
     }
 
     public (float speed01, float turn) Decide(Observation obs)
@@ -317,31 +290,22 @@ public class LLM_ChatGPT_1_FB : IRoverController
         float goalAngle = NormalizeAngle(obs.goalAngleDeg);
         float goalDistance = obs.goalDistance;
 
-        // Goal reached.
         if (goalDistance < 0.15f)
             return (0f, 0f);
 
-        // -----------------------------------------
-        // 1. Detect lack of progress
-        // -----------------------------------------
+        // 1. Progress detection
 
         if (totalTicks > 1)
         {
             if (goalDistance < previousGoalDistance - 0.012f)
-            {
                 stuckTicks = 0;
-            }
             else
-            {
                 stuckTicks++;
-            }
         }
 
         previousGoalDistance = goalDistance;
 
-        // -----------------------------------------
-        // 2. Dead-end recovery
-        // -----------------------------------------
+        // 2. Recovery
 
         if (stuckTicks > 100 && recoveryTicks == 0)
         {
@@ -360,8 +324,6 @@ public class LLM_ChatGPT_1_FB : IRoverController
         {
             recoveryTicks--;
 
-            // Turn in place to avoid sweeping the
-            // rover's front corner into an obstacle.
             float recoveryTurn = recoveryDirection;
 
             if (TurnSideDanger(recoveryDirection))
@@ -370,12 +332,9 @@ public class LLM_ChatGPT_1_FB : IRoverController
             return (0f, recoveryTurn);
         }
 
-        // -----------------------------------------
         // 3. Obstacle detection
-        // -----------------------------------------
 
         bool frontBlocked = front < FRONT_SAFE;
-
         bool leftBlocked = left < DIAGONAL_SAFE;
         bool rightBlocked = right < DIAGONAL_SAFE;
 
@@ -389,9 +348,7 @@ public class LLM_ChatGPT_1_FB : IRoverController
             leftSideDanger ||
             rightSideDanger;
 
-        // -----------------------------------------
         // 4. Enter avoidance mode
-        // -----------------------------------------
 
         if (!avoiding && obstacleDetected)
         {
@@ -403,15 +360,13 @@ public class LLM_ChatGPT_1_FB : IRoverController
             clearTicks = 0;
         }
 
-        // -----------------------------------------
         // 5. Obstacle avoidance
-        // -----------------------------------------
 
         if (avoiding)
         {
             avoidTicks++;
 
-            float steering = AvoidanceSteering();
+            float avoidanceSteering = AvoidanceSteering();
 
             bool pathClear =
                 front > 1.20f &&
@@ -425,7 +380,6 @@ public class LLM_ChatGPT_1_FB : IRoverController
             else
                 clearTicks = 0;
 
-            // Require stable clearance before leaving.
             if (clearTicks >= 15)
             {
                 avoiding = false;
@@ -434,80 +388,69 @@ public class LLM_ChatGPT_1_FB : IRoverController
             }
             else
             {
-                float avoidanceSpeed = SafeSpeed(steering);
+                float avoidanceSpeed =
+                    SafeSpeed(avoidanceSteering);
 
-                // Extra caution during sharp turns.
-                if (Mathf.Abs(steering) > 0.70f)
+                if (Mathf.Abs(avoidanceSteering) > 0.70f)
+                {
                     avoidanceSpeed = Mathf.Min(
                         avoidanceSpeed, 0.08f
                     );
+                }
 
                 return (
                     avoidanceSpeed,
-                    steering
+                    avoidanceSteering
                 );
             }
         }
 
-        // -----------------------------------------
         // 6. Goal-directed steering
-        // -----------------------------------------
 
-        float goalSteering = Clamp(
+        float steering = Clamp(
             goalAngle / 70f,
             -1f,
             1f
         );
 
-        float steering = goalSteering;
-
-        // -----------------------------------------
         // 7. Predictive side collision avoidance
-        // -----------------------------------------
 
-        // Do not turn toward an obstacle.
         if (steering > 0f)
         {
             if (left < 0.75f || leftSide < 0.35f)
-            {
                 steering = -0.65f;
-            }
         }
         else if (steering < 0f)
         {
             if (right < 0.75f || rightSide < 0.35f)
-            {
                 steering = 0.65f;
-            }
         }
 
-        // Frontal obstacle: choose the safer direction.
         if (front < 0.95f)
         {
             steering = ChooseDirection(goalAngle) * 0.85f;
         }
 
-        // -----------------------------------------
         // 8. Speed control
-        // -----------------------------------------
 
         float speed = SafeSpeed(steering);
 
-        // Large goal angle: rotate slowly.
         if (Mathf.Abs(goalAngle) > 100f)
             speed = Mathf.Min(speed, 0.10f);
 
         if (Mathf.Abs(goalAngle) > 145f)
             speed = 0f;
 
-        // Approach goal carefully.
         if (goalDistance < 0.70f)
             speed = Mathf.Min(speed, 0.20f);
 
-        // Final safety check.
+        // 9. Final safety check
+
         if (front < 0.35f ||
-            (steering > 0f && (left < 0.25f || leftSide < 0.16f)) ||
-            (steering < 0f && (right < 0.25f || rightSide < 0.16f)))
+            (steering > 0f &&
+             (left < 0.25f || leftSide < 0.16f)) ||
+            (steering < 0f &&
+             (right < 0.25f || rightSide < 0.16f)))
         {
             speed = 0f;
         }

@@ -216,3 +216,8 @@ Checklist of project phases. Update at the end of each phase.
   `LLM_History/LLM_<Model>_<Attempt>_FB_r1.cs, _r2.cs, _r3.cs` (outside Assets). If the last round does not compile, the FB result
   is "no_compile". This answers the earlier open question (latest vs best).
 - ChatGPT attempt 1 is NOT finished: round 3 (compile error of round 2 sent back) is in progress. model_version, human_minutes still to fill.
+
+### ChatGPT attempt 1 - round 3 (final)
+- Round 3 file compiles; Quick Test 0/10 (10 timeouts, "gets stuck in a dead end"). Per the last-round rule this is the final FB result
+  (r1 3/10, r2 no_compile, r3 0/10; files in `LLM_History/`). Three rounds used: attempt stopped. model_version and human_minutes still to fill.
+- LLM_NoCompile/ keeps only LLM_ChatGPT_1_OS.cs (r2 copy removed: identical in LLM_History/).

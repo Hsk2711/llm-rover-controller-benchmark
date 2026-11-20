@@ -1,14 +1,14 @@
-Test report: 3/10 reached the goal, 5 collisions, 2 timeouts (got stuck), 0 runtime errors. Most common failure: hits obstacles while turning.
+Test report: 0/10 reached the goal, 0 collisions, 10 timeouts (got stuck), 0 runtime errors. Most common failure: gets stuck in a dead end.
 
 controller: LLM_ChatGPT_1_FB   (practice map seeds 2000-2009, noise 0.05, trial seeds 1-10)
 map_seed trial_seed outcome time_s exceptions failure_label
-2000 1 Collision 40.3 0 hits obstacles while turning
+2000 1 Timeout 60.0 0 gets stuck in a dead end
 2001 2 Timeout 60.0 0 gets stuck oscillating
-2002 3 Collision 25.0 0 hits obstacles while turning
-2003 4 Collision 54.2 0 hits obstacles while turning
-2004 5 Collision 35.9 0 hits obstacles while turning
-2005 6 Goal 24.6 0 none
-2006 7 Goal 30.5 0 none
-2007 8 Timeout 60.0 0 gets stuck oscillating
-2008 9 Goal 28.8 0 none
-2009 10 Collision 17.7 0 hits obstacles while turning
+2002 3 Timeout 60.0 0 gets stuck in a dead end
+2003 4 Timeout 60.0 0 gets stuck in a dead end
+2004 5 Timeout 60.0 0 gets stuck in a dead end
+2005 6 Timeout 60.0 0 gets stuck in a dead end
+2006 7 Timeout 60.0 0 gets stuck in a dead end
+2007 8 Timeout 60.0 0 gets stuck in a dead end
+2008 9 Timeout 60.0 0 gets stuck in a dead end
+2009 10 Timeout 60.0 0 gets stuck in a dead end
