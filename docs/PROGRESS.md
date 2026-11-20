@@ -286,3 +286,7 @@ Checklist of project phases. Update at the end of each phase.
 - Rule (CLAUDE.md): run every Quick Test with `python tools/run_quicktest.py <Controller>`. Each run is appended to `results/quicktest_restarts.csv`
   (date, controller, restarts, seconds, outcome, report). Earlier Quick Tests (before this rule) were not counted; the stalls were handled by hand.
 - To revisit before Phase 7: stall handling for the overnight runner.
+
+### Claude attempt 1 - one-shot (OS)
+- LLM_Claude_1_OS.cs saved (class renamed only), compiles, Check LLM Files OK. Name property "LLM_Controller" (untouched). Quick Test 10/10 via run_quicktest.py (0 restarts).
+  Stop early at 10/10: attempt closed, 0 feedback rounds. Incognito chat. model_version, human_minutes still to fill.
