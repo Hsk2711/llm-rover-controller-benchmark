@@ -290,3 +290,8 @@ Checklist of project phases. Update at the end of each phase.
 ### Claude attempt 1 - one-shot (OS)
 - LLM_Claude_1_OS.cs saved (class renamed only), compiles, Check LLM Files OK. Name property "LLM_Controller" (untouched). Quick Test 10/10 via run_quicktest.py (0 restarts).
   Stop early at 10/10: attempt closed, 0 feedback rounds. Incognito chat. model_version, human_minutes still to fill.
+
+### FB file for every valid attempt (2026-11-20)
+- Rule (CLAUDE.md): each valid attempt has an OS and an FB file; a 10/10 one-shot gets FB = exact copy of OS (identifier rename only). Tool: `tools/ensure_fb_files.py` (`--check` to report).
+- Created LLM_Claude_1_FB.cs (class AND constructor renamed, 2 occurrences). Quick Test via run_quicktest.py gives the same 10/10 as the OS. Audit: ChatGPT 1 (OS no_compile, FB r3),
+  ChatGPT 2 (OS, FB r3) and Gemini 1 (OS 5/10, FB r3) already had both files; excluded attempts are ignored. Only Claude 1 was missing.

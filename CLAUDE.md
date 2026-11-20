@@ -47,6 +47,9 @@ algorithm on the same simulated rover. Results must be real, reproducible and fa
   "no_compile" (success=0), even if an earlier round compiled and scored higher.
 - ALWAYS run the Quick Test through `python tools/run_quicktest.py <Controller>` (it restarts Play-mode stalls automatically); never start it by hand.
   Each run is logged with its number of restarts in results/quicktest_restarts.csv. Revisit before Phase 7 (overnight runner).
+- EVERY valid attempt must have BOTH an OS and an FB file. If the one-shot scores 10/10 (stop early, 0 rounds) the FB file is an exact copy of the OS file
+  with only the identifier LLM_<Model>_<N>_OS renamed to ..._FB (class name, plus the constructor name if there is one), and the log note says "FB = OS".
+  AUTOMATIC: after every attempt run `python tools/ensure_fb_files.py` (creates missing FB files and logs them; `--check` only reports), then recompile.
 - human_minutes (results/llm_generation_log.csv) = active human time per attempt, from opening the chatbot chat to the final code being saved,
   excluding time waiting for compile and Quick Test. Values entered afterwards are marked "estimated afterwards" in the notes.
   (Column definitions: results/llm_generation_log_columns.txt.)
