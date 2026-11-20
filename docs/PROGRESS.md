@@ -254,3 +254,7 @@ Checklist of project phases. Update at the end of each phase.
 ### Gemini attempt 1 - feedback round 1
 - LLM_Gemini_1_FB.cs (round 1) compiles (class renamed only); Name "AntiOscillationSensorNavigator". Quick Test 5/10 (0 collisions, 5 timeouts, oscillating). OS was 5/10.
   Current FB result (last-round rule) 5/10. Files in `LLM_History/` (LLM_Gemini_1_OS.cs, LLM_Gemini_1_FB_r1.cs). 1 of 3 rounds used.
+
+### Gemini attempt 1 - feedback round 2
+- Round 2 compiles (class renamed only); Name "SteadyProgressNavigator". Quick Test 3/10 (0 collisions, 7 timeouts, oscillating). Scores so far: OS 5, r1 5, r2 3.
+  Current FB result (last-round rule) 3/10. File `LLM_History/LLM_Gemini_1_FB_r2.cs`. 2 of 3 rounds used.
