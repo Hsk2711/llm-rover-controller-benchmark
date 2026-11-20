@@ -225,3 +225,7 @@ Checklist of project phases. Update at the end of each phase.
 ### ChatGPT attempt 2 - one-shot (OS)
 - LLM_ChatGPT_2_OS.cs saved (class renamed only), compiles, Rover > Check LLM Files: OK. Quick Test 9/10 (1 head-on collision). Temporary chat.
 - Attempt still open (feedback rounds possible, 0 used so far). model_version and human_minutes still to fill.
+
+### ChatGPT attempt 2 - feedback round 1
+- LLM_ChatGPT_2_FB.cs (round 1) compiles, class renamed only; Quick Test 0/10 (1 collision, 9 timeouts, dead end). OS was 9/10.
+  Last-round rule: the FB result is 0/10 unless rounds 2-3 change it. Files in `LLM_History/` (LLM_ChatGPT_2_OS.cs, LLM_ChatGPT_2_FB_r1.cs). 1 of 3 rounds used.
