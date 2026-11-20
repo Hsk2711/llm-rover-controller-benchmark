@@ -42,6 +42,9 @@ algorithm on the same simulated rover. Results must be real, reproducible and fa
 - FEEDBACK PROTOCOL for LLM attempts: up to 3 feedback rounds per attempt IN TOTAL; a round that only sends back a compile error
   counts as one of the 3. Stop early as soon as the Quick Test shows 10/10. Each round sends only the exact one-line report from
   docs/feedback_template.txt (or the compiler error text). Log feedback_rounds and the final score in results/llm_generation_log.csv.
+- FINAL FB RESULT = the code of the LAST round used, ALWAYS, never the best round. Every round's code is kept as evidence outside
+  Assets in LLM_History/LLM_<Model>_<Attempt>_FB_r1.cs, _r2.cs, _r3.cs. If the last round does not compile, the FB result is
+  "no_compile" (success=0), even if an earlier round compiled and scored higher.
 - LLM files that do NOT compile are moved UNEDITED out of Assets to LLM_NoCompile/ (tools/quarantine_noncompiling.py does it and logs it).
   Their controllers stay in the study: the experiment runner must report them as success=0, outcome "no_compile" in every trial
   (ControllerRegistry.ExperimentEntries()). Never fix them, never drop them.
