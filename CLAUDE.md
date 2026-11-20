@@ -45,6 +45,8 @@ algorithm on the same simulated rover. Results must be real, reproducible and fa
 - FINAL FB RESULT = the code of the LAST round used, ALWAYS, never the best round. Every round's code is kept as evidence outside
   Assets in LLM_History/LLM_<Model>_<Attempt>_FB_r1.cs, _r2.cs, _r3.cs. If the last round does not compile, the FB result is
   "no_compile" (success=0), even if an earlier round compiled and scored higher.
+- ALWAYS run the Quick Test through `python tools/run_quicktest.py <Controller>` (it restarts Play-mode stalls automatically); never start it by hand.
+  Each run is logged with its number of restarts in results/quicktest_restarts.csv. Revisit before Phase 7 (overnight runner).
 - human_minutes (results/llm_generation_log.csv) = active human time per attempt, from opening the chatbot chat to the final code being saved,
   excluding time waiting for compile and Quick Test. Values entered afterwards are marked "estimated afterwards" in the notes.
   (Column definitions: results/llm_generation_log_columns.txt.)

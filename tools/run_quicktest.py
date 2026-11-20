@@ -8,8 +8,10 @@ after a new file was added, cost up to 20 min each time). This driver starts the
 the frame has not advanced past 2 for STALL_SECONDS it stops Play mode and starts again (up to ATTEMPTS times). Nothing about the
 simulation changes: the same QuickTestWindow.Start / QuickTestRunner code runs, only the start is retried. Prints the one-line
 report (also in results/quicktest/<controller>.txt).
+Every run is appended to results/quicktest_restarts.csv: date, controller, restarts (stalled starts that had to be redone),
+seconds, outcome (ok / failed), report. This is how we count how often the stall happens.
 """
-import os, shutil, subprocess, sys, time
+import csv, os, shutil, subprocess, sys, time
 
 STALL_SECONDS = 45
 RUN_SECONDS = 240
@@ -23,6 +25,18 @@ def unity(*args, timeout=40):
     except subprocess.TimeoutExpired:
         return ""
     return (out.stdout or b"").decode("utf-8", "replace") + (out.stderr or b"").decode("utf-8", "replace")
+
+
+LOG = os.path.join("results", "quicktest_restarts.csv")
+
+
+def log_run(name, restarts, seconds, outcome, report):
+    new = not os.path.exists(LOG)
+    with open(LOG, "a", encoding="utf-8", newline="") as f:
+        w = csv.writer(f)
+        if new:
+            w.writerow(["date", "controller", "restarts", "seconds", "outcome", "report"])
+        w.writerow([time.strftime("%Y-%m-%d %H:%M:%S"), name, restarts, int(seconds), outcome, report])
 
 
 def frame():
@@ -39,6 +53,7 @@ def main():
         sys.exit(__doc__)
     name = sys.argv[1]
     result = os.path.join("results", "quicktest", name + ".txt")
+    start_all = time.time()
     for attempt in range(1, ATTEMPTS + 1):
         unity("editor.playmode", "stop")
         time.sleep(10)
@@ -50,7 +65,10 @@ def main():
         while time.time() - t0 < RUN_SECONDS:
             if os.path.exists(result) and os.path.getmtime(result) > mark:
                 print("attempt %d ok after %d s:" % (attempt, time.time() - t0))
-                print(open(result, encoding="utf-8").readline().strip())
+                report = open(result, encoding="utf-8").readline().strip()
+                print(report)
+                print("restarts needed: %d" % (attempt - 1))
+                log_run(name, attempt - 1, time.time() - start_all, "ok", report)
                 return 0
             f = frame()                     # also keeps the Editor awake
             if f is not None and f > last_frame + 2:
@@ -63,6 +81,7 @@ def main():
             print("attempt %d: no result after %d s - retrying" % (attempt, RUN_SECONDS))
     unity("editor.playmode", "stop")
     print("FAILED after %d attempts" % ATTEMPTS)
+    log_run(name, ATTEMPTS, time.time() - start_all, "failed", "")
     return 1
 
 

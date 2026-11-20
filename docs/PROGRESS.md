@@ -281,3 +281,8 @@ Checklist of project phases. Update at the end of each phase.
   restarts (up to 5 times); a stall now costs about a minute instead of up to 20. Prefer it over typing the retry by hand.
 - Physics unchanged (nothing in simulation or controller code was touched). Reruns: RuleBased 10/10 (same as before); LLM_ChatGPT_2_OS 9/10 (same), and its per-run detail
   file results/quicktest/LLM_ChatGPT_2_OS.txt is byte-identical to the earlier one (3 reruns + 1 via the new driver).
+
+### Quick Test always through the driver (2026-11-20)
+- Rule (CLAUDE.md): run every Quick Test with `python tools/run_quicktest.py <Controller>`. Each run is appended to `results/quicktest_restarts.csv`
+  (date, controller, restarts, seconds, outcome, report). Earlier Quick Tests (before this rule) were not counted; the stalls were handled by hand.
+- To revisit before Phase 7: stall handling for the overnight runner.

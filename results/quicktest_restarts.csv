@@ -1,0 +1,2 @@
+date,controller,restarts,seconds,outcome,report
+2026-11-20 21:48:07,LLM_ChatGPT_2_OS,0,63,ok,"Test report: 9/10 reached the goal, 1 collisions, 0 timeouts (got stuck), 0 runtime errors. Most common failure: hits obstacles head-on."
