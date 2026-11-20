@@ -267,3 +267,17 @@ Checklist of project phases. Update at the end of each phase.
 - human_minutes = active human time per attempt, from opening the chatbot chat to the final code being saved, excluding time waiting for compile and Quick Test.
   Corrected values (estimated afterwards): Gemini attempt 1 = 5, ChatGPT attempt 1 = 10, ChatGPT attempt 2 = 8 (were 20, 30, 25 under the old definition).
   Definition also in CLAUDE.md and results/llm_generation_log_columns.txt.
+
+### Play-mode stall investigation (2026-11-20)
+- Symptom: after entering Play mode (Quick Test or `editor.playmode start`) Time.frameCount stayed at 1 for minutes; stop + start usually fixed it (up to 20 min lost per Quick Test).
+- Checked: Application.runInBackground = false, Editor not focused, no Enter-Play-Mode options (domain reload on every Play entry, ~5 s), default Interaction Mode.
+  Editor.log shows thousands of repeated exceptions from the Unity AI editor package (AiEditorToolsSdk ... TrySetResult), a background task unrelated to our code.
+- Tested (about 20 Play entries): normal start 17-27 s; start after 45 s with no CLI contact (3x); start right after a forced recompile (3x);
+  real Quick Test route (RuleBased 1x, ChatGPT_2_OS 3x); real Quick Test after a real script change + recompile (RuleBased 3x). NO stall reproduced; every run reached
+  frames > 300 within 40 s. So the stall is intermittent and its root cause is NOT proven. Ruled out: a controller infinite loop (stalls also hit a plain Play start with no
+  controller), Quick Test code (plain `editor.playmode start` stalled too), background throttling by silence (silent waits worked), recompile right before (worked).
+  Most likely an Editor-side hiccup while entering Play mode (assembly reload / AI-package background work / window focus); not changeable from our code.
+- Mitigation (no effect on physics): tools/run_quicktest.py <Controller> runs the normal Quick Test and, if the frame counter stops advancing for 45 s, stops Play mode and
+  restarts (up to 5 times); a stall now costs about a minute instead of up to 20. Prefer it over typing the retry by hand.
+- Physics unchanged (nothing in simulation or controller code was touched). Reruns: RuleBased 10/10 (same as before); LLM_ChatGPT_2_OS 9/10 (same), and its per-run detail
+  file results/quicktest/LLM_ChatGPT_2_OS.txt is byte-identical to the earlier one (3 reruns + 1 via the new driver).
