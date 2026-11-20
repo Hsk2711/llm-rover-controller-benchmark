@@ -175,7 +175,22 @@ Checklist of project phases. Update at the end of each phase.
 - Verified: ExperimentNames = Bug2Controller, RuleBasedController; Excluded = LLM_ChatGPT_1_OS_excluded; Llm = 0; misnamed = 0.
 - Attempt numbers: VALID attempts are numbered 1-5 per chatbot; the excluded file is not counted. The first valid ChatGPT attempt (temporary chat,
   one-shot, does not compile: CS0136 at line 343) is therefore `LLM_ChatGPT_1_OS.cs` (first saved as _2_, renamed file and class, no other change).
-  The excluded file keeps its `_excluded` name and log row (also shown as attempt 1, but flagged excluded in the notes).
+  The excluded file keeps its `_excluded` name and log row (attempt cell `X1` in the log, flagged excluded in the notes).
+
+## Non-compiling LLM files (2026-11-20)
+
+- Rule: a chatbot file that does not compile is evidence, not something to fix. It is moved UNEDITED to `LLM_NoCompile/` in the project root
+  (outside Assets, so Unity ignores it and the project compiles). It stays in the study as a result: success = 0, outcome `no_compile`.
+- `LLM_ChatGPT_1_OS.cs` (official one-shot result, CS0136 at line 343) is the first such file: moved to `LLM_NoCompile/LLM_ChatGPT_1_OS.cs`
+  (its .meta deleted). The project compiles again (checked: no compile errors; registry lists Bug2, RuleBased, Manual, Stop and the excluded class).
+- Automatic for future files: `python tools/quarantine_noncompiling.py` (Editor open; `--dry-run` to only report). It forces a recompile, and if
+  all errors are in LLM files (not Excluded/) it moves each such file, removes its .meta, sets one_shot_compiled (OS) or final_compiled (FB) to FALSE
+  in `results/llm_generation_log.csv` with the first compiler error in the notes, recompiles and confirms. Errors in any other file: nothing is moved.
+  Tested with a throw-away broken file (moved, logged, project compiled; test file and test log row removed afterwards).
+- For Phase 7: `ControllerRegistry.ExperimentEntries()` returns (name, compiles) for the baselines, all LLM controllers and the files in
+  `LLM_NoCompile/` (`NoCompileNames()`, outcome string `ControllerRegistry.NoCompileOutcome` = "no_compile"). The runner must write one result row per
+  trial/noise/map for every no-compile controller with success=0 and outcome no_compile, and never try to run it. Note: if OS fails to compile and an FB
+  file later compiles, they are two separate controllers (…_OS no_compile, …_FB normal).
 
 ## Notes for later phases
 

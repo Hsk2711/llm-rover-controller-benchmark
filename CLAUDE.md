@@ -39,6 +39,9 @@ algorithm on the same simulated rover. Results must be real, reproducible and fa
   NEVER edit, fix or improve them, except renaming the class to match the file name.
 - BASELINES ARE FROZEN (pilot revision, 2026-11-20): RuleBasedController, Bug2Controller, RuleParams and
   Bug2Params must not be changed any more (docs/reports/pilot_revision.md lists their exact file versions).
+- LLM files that do NOT compile are moved UNEDITED out of Assets to LLM_NoCompile/ (tools/quarantine_noncompiling.py does it and logs it).
+  Their controllers stay in the study: the experiment runner must report them as success=0, outcome "no_compile" in every trial
+  (ControllerRegistry.ExperimentEntries()). Never fix them, never drop them.
 - All fixed numbers live in a ScriptableObject called SimConfig, never hard-coded.
 - Build one step at a time. After each step, explain what you did in simple words;
   the user is a mechanical engineer, new to robotics software.

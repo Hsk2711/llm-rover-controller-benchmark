@@ -54,6 +54,27 @@ public static class ControllerRegistry
         return ControllerKind.Utility;
     }
 
+    // ---- LLM files that did not compile ----
+    // A file that does not compile would block the whole project, so tools/quarantine_noncompiling.py moves it OUT of Assets to
+    // <project>/LLM_NoCompile/ (Unity ignores it there; kept as evidence). Such a controller is still part of the study: the
+    // experiment runner must count it as success = 0 with outcome "no_compile" in every trial (never skip it, never fix it).
+    public const string NoCompileOutcome = "no_compile";
+
+    /// <summary>Folder holding the LLM files that did not compile (outside Assets).</summary>
+    public static string NoCompileFolder => System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Application.dataPath), "LLM_NoCompile");
+
+    /// <summary>Class names (= file names) of the LLM controllers that did not compile, sorted.</summary>
+    public static string[] NoCompileNames()
+    {
+        if (!System.IO.Directory.Exists(NoCompileFolder)) return new string[0];
+        return System.IO.Directory.GetFiles(NoCompileFolder, "LLM_*.cs").Select(System.IO.Path.GetFileNameWithoutExtension)
+            .OrderBy(n => n, StringComparer.Ordinal).ToArray();
+    }
+
+    /// <summary>Everything the experiment must report on: (name, true) = runs normally, (name, false) = did not compile (record success 0, outcome "no_compile").</summary>
+    public static (string name, bool compiles)[] ExperimentEntries() =>
+        ExperimentNames().Select(n => (n, true)).Concat(NoCompileNames().Select(n => (n, false))).ToArray();
+
     /// <summary>LLM controller classes whose name does not follow LLM_&lt;Model&gt;_&lt;Attempt&gt;_&lt;OS|FB&gt; (to be reported, never fixed by us).</summary>
     public static string[] MisnamedLlmControllers() => Names(ControllerKind.Llm).Where(n => !LlmNamePattern.IsMatch(n)).ToArray();
 
