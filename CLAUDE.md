@@ -30,6 +30,9 @@ algorithm on the same simulated rover. Results must be real, reproducible and fa
   give a regular lattice, not random poses). The 30 poses are in results/start_poses.csv.
 - Every controller gets the same inputs: front, left, right, leftSide, rightSide readings,
   goal distance, goal angle. (Bug2 additionally uses rover position - must be stated in the paper.)
+  ENFORCED by ControllerHost.Restrict() (harness change 2026-11-20): for every controller except Bug2Controller the Observation fields
+  roverPos, startPos, goalPos are set to (0,0) before Decide, so LLM controllers get exactly what docs/llm_task_spec.txt describes.
+  Test: menu Rover > Test Observation Restriction. LLM files are audited (read-only) by Rover > Check LLM Files.
 
 ## Rules
 - LLM-written controllers (folder Assets/Scripts/Controllers/LLM) are study subjects.

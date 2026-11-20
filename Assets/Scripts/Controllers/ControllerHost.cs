@@ -4,7 +4,8 @@
 // until the next decision. When the run is over (collision or goal reached) it stops the rover and stops asking.
 // Pick the active controller in the Inspector dropdown (or call SetController from code, as the experiment runner will).
 // A new run starts when RoverStatus.RunReset fires (e.g. TrialSpawner.Spawn): the controller is reset and the start
-// position is remembered (only Bug2 uses it).
+// position is remembered (only Bug2 uses it). Before Decide the Observation goes through Restrict(): every controller
+// except Bug2 gets roverPos/startPos/goalPos = (0,0), so nobody else can use the rover's position.
 using UnityEngine;
 
 [DefaultExecutionOrder(100)]   // runs after SensorRig (order 0), so it sees the sensors' newest measurement
@@ -96,7 +97,7 @@ public class ControllerHost : MonoBehaviour
 
         if (!TryBuildObservation(out Observation obs)) { drive.SetCommand(0f, 0f); return; }
 
-        var answer = safe.Decide(obs);
+        var answer = safe.Decide(Restrict(obs, safe.Inner));
         LastSpeed = answer.speed01;
         LastTurn = answer.turn;
         DecisionCount++;
@@ -108,6 +109,15 @@ public class ControllerHost : MonoBehaviour
     {
         if (safe == null || drive == null || drive.config == null || !drive.config.showViewAids) return;
         (safe.Inner as IControllerGizmos)?.DrawGizmos();
+    }
+
+    /// <summary>What a controller is ALLOWED to see. Only Bug2 may know where it is: for every other controller the rover, start
+    /// and goal positions are set to zero, so LLM controllers get exactly the inputs of docs/llm_task_spec.txt.</summary>
+    public static Observation Restrict(Observation obs, IRoverController controller)
+    {
+        if (controller is Bug2Controller) return obs;
+        obs.roverPos = obs.startPos = obs.goalPos = Vector2.zero;
+        return obs;
     }
 
     /// <summary>The Observation a controller would get right now (also used by tests).</summary>

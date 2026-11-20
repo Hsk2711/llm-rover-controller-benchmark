@@ -143,14 +143,25 @@ Checklist of project phases. Update at the end of each phase.
   3-sensor draft; same text for every one of the 30 attempts, never edited again). Checked against the code:
   * Observation fields named in the spec (front, left, right, leftSide, rightSide, goalDistance, goalAngleDeg) all exist as floats;
     Observation also has roverPos/startPos/goalPos (Vector2) which the spec tells the chatbot to ignore (only Bug2 uses them).
-    Note for the paper: a chatbot controller COULD read them; the spec forbids it implicitly ("no position"). Check each LLM file
-    for use of roverPos/startPos/goalPos and report any use; never edit the file.
+    Note for the paper: a chatbot controller COULD read them; the spec forbids it implicitly ("no position"). Since the harness now zeroes them (see next section), this is closed; the file check still reports any use.
   * Signs: turn positive = left (RoverDrive: yaw rate = -turn x rate, Unity +Y is right); goalAngleDeg positive = goal on the left
     (Vector2.SignedAngle, counter-clockwise in x/z seen from above; e.g. facing north with the goal north-east gives -45 = right);
     sensor angles positive = left (leftSide reads the west wall when facing north, measured 0.425 m at the arena start).
   * Numbers: speed 0.3 m/s, turn 90 deg/s, rover 0.20 x 0.15 m, range 0.02-4.0 m, +-15 deg cone, 20 Hz, 60 s, any contact ends the run,
     dropout returns 4.0, noise proportional to distance (study levels 0/2/5/10%, spec says "up to 10%"): all match SimConfig/CLAUDE.md.
   * Class name: the chatbot writes `LLM_Controller`; we rename it to the file name LLM_<Model>_<Attempt>_<OS|FB> (the only allowed edit).
+
+## Harness change: position fields hidden from non-Bug2 controllers (2026-11-20, before the first LLM controller)
+
+- `ControllerHost.Restrict(obs, controller)` is applied to every Observation before `Decide`: for every controller except
+  `Bug2Controller` the fields roverPos, startPos, goalPos are (0,0); sensor readings, goalDistance and goalAngleDeg are untouched.
+  Frozen baselines: no file changed; Rule-based never reads those fields, Bug2 still gets them.
+- Tests: `Rover > Test Observation Restriction` (15 checks, all pass, includes every class in the registry). End-to-end in Play mode with a
+  throw-away probe controller: probe saw (0,0) x3 while the host's own observation held the real positions (probe deleted afterwards).
+  Regression: Quick Test after the change gives the same numbers as before (RuleBased 10/10, Bug2 5/10 with 5 collisions).
+- `Rover > Check LLM Files` (LlmFileCheck, read-only): for each file in Controllers/LLM reports file-name pattern, class name = file name,
+  one class only, any use of roverPos/startPos/goalPos (harmless now, but report it), forbidden APIs from the spec (Random, Physics,
+  GameObject/Transform, Time) and re-declared Observation/IRoverController. Tested on 3 sample files. Never edits.
 
 ## Notes for later phases
 
