@@ -139,9 +139,18 @@ Checklist of project phases. Update at the end of each phase.
   final_compiled, final_quicktest_score, human_minutes, notes).
 - `docs/llm_task_spec.txt` saved unchanged (see the open issue below).
 
-- OPEN ISSUE (found 2026-11-20): the saved task spec still describes the 3-sensor platform (Observation with front, left, right only)
-  and asks for a class named `LLM_Controller`. The platform has 5 sensors since the pilot revision (Observation also has
-  leftSide, rightSide) and the file/class naming rule is LLM_<Model>_<Attempt>_<Cond>. Decision pending from the user; the file is kept unchanged.
+- TASK SPEC FINAL AND FROZEN (2026-11-20): `docs/llm_task_spec.txt` is now the five-sensor version supplied by the user (it replaces the
+  3-sensor draft; same text for every one of the 30 attempts, never edited again). Checked against the code:
+  * Observation fields named in the spec (front, left, right, leftSide, rightSide, goalDistance, goalAngleDeg) all exist as floats;
+    Observation also has roverPos/startPos/goalPos (Vector2) which the spec tells the chatbot to ignore (only Bug2 uses them).
+    Note for the paper: a chatbot controller COULD read them; the spec forbids it implicitly ("no position"). Check each LLM file
+    for use of roverPos/startPos/goalPos and report any use; never edit the file.
+  * Signs: turn positive = left (RoverDrive: yaw rate = -turn x rate, Unity +Y is right); goalAngleDeg positive = goal on the left
+    (Vector2.SignedAngle, counter-clockwise in x/z seen from above; e.g. facing north with the goal north-east gives -45 = right);
+    sensor angles positive = left (leftSide reads the west wall when facing north, measured 0.425 m at the arena start).
+  * Numbers: speed 0.3 m/s, turn 90 deg/s, rover 0.20 x 0.15 m, range 0.02-4.0 m, +-15 deg cone, 20 Hz, 60 s, any contact ends the run,
+    dropout returns 4.0, noise proportional to distance (study levels 0/2/5/10%, spec says "up to 10%"): all match SimConfig/CLAUDE.md.
+  * Class name: the chatbot writes `LLM_Controller`; we rename it to the file name LLM_<Model>_<Attempt>_<OS|FB> (the only allowed edit).
 
 ## Notes for later phases
 
