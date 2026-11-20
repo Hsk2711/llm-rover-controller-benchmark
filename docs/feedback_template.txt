@@ -1,0 +1,27 @@
+FEEDBACK TEMPLATE (sent back to the chatbot after the Quick Test; exactly this wording, nothing added)
+
+Test report: {s}/10 reached the goal, {c} collisions, {t} timeouts (got stuck), {e} runtime errors. Most common failure: {f}.
+
+{s} = runs that reached the goal, {c} = runs ended by a collision, {t} = runs that hit the 60 s limit,
+{e} = runs in which the controller threw at least one exception (counted in addition to its s/c/t outcome).
+{f} is exactly one of:
+  hits obstacles head-on
+  hits obstacles while turning
+  gets stuck oscillating
+  gets stuck in a dead end
+  drives away from the goal
+  none
+Example: Test report: 4/10 reached the goal, 5 collisions, 1 timeouts (got stuck), 0 runtime errors. Most common failure: hits obstacles head-on.
+
+How the tool (Rover > Quick Test Controller) fills it in:
+  Maps: PracticeMapGenerator seeds 2000-2009 (never the 4 test maps), one run each, noise 0.05, trial seeds 1-10.
+  {f} = the most common label among the FAILED runs (collision or timeout); a tie goes to the label listed first above;
+  "none" if every run reached the goal. Runtime errors are not a failure label.
+  Each failed run gets one label:
+    collision, rover was turning (|last turn command| >= 0.3)  -> hits obstacles while turning
+    collision, otherwise                                       -> hits obstacles head-on
+    timeout, in the last 20 s the turn command changed direction 10+ times and the rover moved < 1.0 m -> gets stuck oscillating
+    timeout, otherwise moved < 0.5 m in the last 20 s           -> gets stuck in a dead end
+    timeout, otherwise ended farther from the goal than it started -> drives away from the goal
+    timeout, anything else (keeps moving but never gets closer) -> gets stuck oscillating
+  The labels are hints computed from the rover's motion, not a diagnosis of the code.

@@ -53,7 +53,7 @@ public class ControllerHost : MonoBehaviour
     /// <summary>Make the controller with this class name active (it is wrapped in a SafeController).</summary>
     public void SetController(string className)
     {
-        var c = ControllerFactory.Create(className);
+        var c = ControllerRegistry.Create(className);
         if (c == null) { safe = null; appliedName = className; return; }
         SetController(c);
     }

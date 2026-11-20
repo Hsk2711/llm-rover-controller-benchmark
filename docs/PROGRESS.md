@@ -125,6 +125,20 @@ Checklist of project phases. Update at the end of each phase.
 - BASELINES FROZEN from this point (RuleBasedController, Bug2Controller, RuleParams, Bug2Params); blob ids in the report.
   The earlier notes above (3 sensors, old wall-lost rule) describe the platform before this revision.
 
+## Phase 6 step 1 (2026-11-20): project prepared for chatbot controllers (no controller written yet)
+
+- `Assets/Scripts/Controllers/LLM/` (empty, `.gitkeep`): files named `LLM_<Model>_<Attempt>_<OS|FB>.cs`, class name = file name.
+- `ControllerRegistry` (was `ControllerFactory`, renamed with git mv): finds all IRoverController classes by itself; kinds
+  Baseline / Llm (name starts `LLM_`) / Utility; `ExperimentNames()` = the 2 baselines + all LLM controllers. The ControllerHost
+  dropdown uses it. Misnamed LLM classes are reported (never fixed by us).
+- Quick Test: menu Rover > Quick Test Controller (`QuickTestWindow`, `QuickTestRunner`). 10 practice maps (seeds 2000-2009,
+  noise 0.05, trial seeds 1-10), one-line report in the wording of `docs/feedback_template.txt` (also copied to the clipboard,
+  details in `results/quicktest/<controller>.txt`, not committed). Failure labels come from simple documented rules.
+  Checked on the existing controllers: RuleBased 10/10, Bug2 5/10 (head-on collisions), Stop 0/10 (timeouts). Nothing run on test maps.
+- `results/llm_generation_log.csv`: header only (model, model_version, date, attempt, one_shot_compiled, feedback_rounds,
+  final_compiled, final_quicktest_score, human_minutes, notes).
+- Still to do: save the task specification as `docs/llm_task_spec.txt` (unchanged, text not yet received).
+
 ## Notes for later phases
 
 - Phase 7: for each trial seed 1-30 call `TrialSpawner.Spawn(seed)` (after `MapLoader.Load(map)`) so every controller starts

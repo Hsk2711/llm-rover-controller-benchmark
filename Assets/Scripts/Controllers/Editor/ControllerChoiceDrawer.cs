@@ -1,5 +1,5 @@
 // ControllerChoiceDrawer: Editor-only. Draws a string field marked [ControllerChoice] as a dropdown listing every controller
-// class found by ControllerFactory. If the stored name no longer exists it is shown as "(missing)".
+// class found by ControllerRegistry. If the stored name no longer exists it is shown as "(missing)".
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
@@ -15,7 +15,7 @@ public class ControllerChoiceDrawer : PropertyDrawer
             return;
         }
 
-        var names = ControllerFactory.Names().ToList();
+        var names = ControllerRegistry.Names().ToList();
         string current = property.stringValue;
         int index = names.IndexOf(current);
         if (index < 0)
