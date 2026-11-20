@@ -246,3 +246,7 @@ Checklist of project phases. Update at the end of each phase.
 - Gemini attempt 1 was not run in a Temporary Chat (protocol deviation, as for ChatGPT's first attempt). `LLM_Gemini_1_OS.cs` moved to
   `LLM/Excluded/LLM_Gemini_1_OS_excluded.cs` (class renamed to match; nothing else changed). Quick Test before exclusion: 10/10. Log row kept as
   attempt `X1`, "excluded - not a temporary chat". Registry and runner ignore it; valid Gemini attempts start again at 1.
+
+### Gemini attempt 1 (valid) - one-shot (OS)
+- LLM_Gemini_1_OS.cs saved (class renamed only), compiles. Name property: "DeterministicSensorNavigator". Quick Test 5/10 (0 collisions, 5 timeouts, oscillating).
+  Temporary Chat, Auto mode. Attempt open (0 of 3 rounds used). The excluded earlier file is kept as LLM_History/LLM_Gemini_1_OS_excluded.cs.
