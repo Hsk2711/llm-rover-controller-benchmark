@@ -65,6 +65,20 @@ public static class LlmFileCheck
             if (issues.Length == 0) sb.AppendLine("  OK   " + name);
             else { flagged++; sb.AppendLine("  FLAG " + name); sb.Append(issues); }
         }
+        // Excluded attempts (Excluded/ subfolder): they must be named ..._excluded in file AND class, otherwise the registry would
+        // treat them as study controllers. Listed for information only.
+        string exFolder = Path.Combine(folder, "Excluded");
+        if (Directory.Exists(exFolder))
+        {
+            foreach (string path in Directory.GetFiles(exFolder, "*.cs"))
+            {
+                string name = Path.GetFileNameWithoutExtension(path);
+                string code = StripCommentsAndStrings(File.ReadAllText(path));
+                bool classOk = Regex.IsMatch(code, @"\bclass\s+" + Regex.Escape(name) + @"\b") && name.EndsWith(ControllerRegistry.ExcludedSuffix);
+                if (classOk) sb.AppendLine("  excluded (ignored by the study): " + name);
+                else { flagged++; sb.AppendLine("  FLAG Excluded/" + name + ": file and class must end with _excluded and match each other, else the registry would use it"); }
+            }
+        }
         sb.AppendLine(flagged == 0 ? "No file flagged." : flagged + " file(s) flagged. Nothing was changed; report these, do not fix them.");
         return sb.ToString();
     }

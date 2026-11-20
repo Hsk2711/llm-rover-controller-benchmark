@@ -1,2 +1,2 @@
 model,model_version,date,attempt,one_shot_compiled,feedback_rounds,final_compiled,final_quicktest_score,human_minutes,notes
-ChatGPT,,2026-11-20,1,TRUE,0,TRUE,7,,"One-shot. Compiled first time. Quick Test 7/10 (3 head-on collisions; run twice, identical). Class renamed LLM_Controller -> LLM_ChatGPT_1_OS only. model_version and human_minutes still to fill in."
+ChatGPT,,2026-11-20,1,TRUE,0,TRUE,7,,"excluded - not a temporary chat (protocol deviation; not part of the study). Quick test before exclusion: 7/10 (3 head-on collisions; run twice, identical). File moved to LLM/Excluded/LLM_ChatGPT_1_OS_excluded.cs, class renamed to match the file name, nothing else changed. model_version and human_minutes still to fill in."

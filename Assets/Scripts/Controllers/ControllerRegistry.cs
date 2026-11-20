@@ -3,18 +3,22 @@
 // Assets/Scripts/Controllers/LLM/ shows up in the ControllerHost dropdown, the Quick Test tool and the experiment runner
 // with no registration step. Each controller has a Kind: Baseline (the two frozen reference controllers), Llm (class name
 // starts with "LLM_") or Utility (Manual, Stop). The experiment runner takes Baselines + Llm; Utility is for testing only.
+// Files in Assets/Scripts/Controllers/LLM/Excluded/ are named LLM_..._excluded (attempts removed from the study, e.g. a protocol
+// deviation): their class name ends with "_excluded", they get Kind Excluded and are NEVER in ExperimentNames().
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEngine;
 
-public enum ControllerKind { Baseline, Llm, Utility }
+public enum ControllerKind { Baseline, Llm, Utility, Excluded }
 
 public static class ControllerRegistry
 {
     /// <summary>Required shape of an LLM controller class (= file) name: LLM_&lt;Model&gt;_&lt;Attempt&gt;_&lt;OS|FB&gt;, e.g. LLM_Claude_3_OS.</summary>
     public static readonly Regex LlmNamePattern = new Regex(@"^LLM_[A-Za-z0-9]+_[0-9]+_(OS|FB)$");
+
+    public const string ExcludedSuffix = "_excluded";
 
     static readonly string[] BaselineNames = { "RuleBasedController", "Bug2Controller" };
 
@@ -44,6 +48,7 @@ public static class ControllerRegistry
 
     public static ControllerKind KindOf(string className)
     {
+        if (className.EndsWith(ExcludedSuffix, StringComparison.Ordinal)) return ControllerKind.Excluded;
         if (className.StartsWith("LLM_", StringComparison.Ordinal)) return ControllerKind.Llm;
         if (Array.IndexOf(BaselineNames, className) >= 0) return ControllerKind.Baseline;
         return ControllerKind.Utility;

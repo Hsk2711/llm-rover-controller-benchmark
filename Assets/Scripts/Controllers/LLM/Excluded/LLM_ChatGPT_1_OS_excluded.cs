@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-public class LLM_ChatGPT_1_OS : IRoverController
+public class LLM_ChatGPT_1_OS_excluded : IRoverController
 {
     public string Name => "Adaptive Wall-Aware Goal Navigation";
 

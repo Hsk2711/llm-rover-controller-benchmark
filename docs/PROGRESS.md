@@ -163,6 +163,19 @@ Checklist of project phases. Update at the end of each phase.
   one class only, any use of roverPos/startPos/goalPos (harmless now, but report it), forbidden APIs from the spec (Random, Physics,
   GameObject/Transform, Time) and re-declared Observation/IRoverController. Tested on 3 sample files. Never edits.
 
+## Excluded attempts (2026-11-20)
+
+- ChatGPT attempt 1 (one-shot) was NOT run in a Temporary Chat: protocol deviation, excluded from the study, file kept (not deleted).
+  Moved to `Assets/Scripts/Controllers/LLM/Excluded/LLM_ChatGPT_1_OS_excluded.cs`; class renamed to match the file name, nothing else changed.
+  Quick test before exclusion: 7/10 reached the goal, 3 head-on collisions (twice, identical). Logged in `results/llm_generation_log.csv`
+  with notes starting "excluded - not a temporary chat".
+- Mechanism: `ControllerRegistry.KindOf` gives every class whose name ends with `_excluded` the kind `Excluded`; `ExperimentNames()`
+  (what the experiment runner must use) = baselines + kind Llm only, so excluded files can never enter a run. Quick Test can still run them
+  (listed last). `Rover > Check LLM Files` lists excluded files and flags any file in Excluded/ whose file or class name lacks the suffix.
+- Verified: ExperimentNames = Bug2Controller, RuleBasedController; Excluded = LLM_ChatGPT_1_OS_excluded; Llm = 0; misnamed = 0.
+- Attempt numbers: ChatGPT attempt 1 is used up; the next ChatGPT file should be attempt 2 (decide with the supervisor whether the attempt count of 30 per study
+  still needs a replacement for the excluded one).
+
 ## Notes for later phases
 
 - Phase 7: for each trial seed 1-30 call `TrialSpawner.Spawn(seed)` (after `MapLoader.Load(map)`) so every controller starts

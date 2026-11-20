@@ -26,7 +26,7 @@ public class QuickTestWindow : EditorWindow
     {
         // LLM controllers first (the usual use), then the baselines, then the utility controllers
         names = ControllerRegistry.Names(ControllerKind.Llm).Concat(ControllerRegistry.Names(ControllerKind.Baseline))
-            .Concat(ControllerRegistry.Names(ControllerKind.Utility)).ToArray();
+            .Concat(ControllerRegistry.Names(ControllerKind.Utility)).Concat(ControllerRegistry.Names(ControllerKind.Excluded)).ToArray();
         string saved = SessionState.GetString(KeyChoice, "");
         int i = System.Array.IndexOf(names, saved);
         choice = i >= 0 ? i : 0;
