@@ -241,3 +241,8 @@ Checklist of project phases. Update at the end of each phase.
 ### Gemini attempt 1 - one-shot (OS)
 - LLM_Gemini_1_OS.cs saved (class renamed only), compiles, Check LLM Files OK. Quick Test 10/10. Stop early at 10/10: attempt closed, 0 feedback rounds.
   Note: its Name property returns "LLM_Controller" (untouched). model_version, human_minutes still to fill.
+
+### Gemini attempt 1 excluded (not a temporary chat)
+- Gemini attempt 1 was not run in a Temporary Chat (protocol deviation, as for ChatGPT's first attempt). `LLM_Gemini_1_OS.cs` moved to
+  `LLM/Excluded/LLM_Gemini_1_OS_excluded.cs` (class renamed to match; nothing else changed). Quick Test before exclusion: 10/10. Log row kept as
+  attempt `X1`, "excluded - not a temporary chat". Registry and runner ignore it; valid Gemini attempts start again at 1.

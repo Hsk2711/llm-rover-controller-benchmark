@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-public class LLM_Gemini_1_OS : IRoverController
+public class LLM_Gemini_1_OS_excluded : IRoverController
 {
     private const int HistorySize = 5;
     private const float SensorMaxRange = 4.0f;
