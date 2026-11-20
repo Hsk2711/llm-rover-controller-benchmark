@@ -1,14 +1,14 @@
-Test report: 3/10 reached the goal, 0 collisions, 7 timeouts (got stuck), 0 runtime errors. Most common failure: gets stuck oscillating.
+Test report: 3/10 reached the goal, 1 collisions, 6 timeouts (got stuck), 0 runtime errors. Most common failure: gets stuck oscillating.
 
 controller: LLM_ChatGPT_2_FB   (practice map seeds 2000-2009, noise 0.05, trial seeds 1-10)
 map_seed trial_seed outcome time_s exceptions failure_label
 2000 1 Timeout 60.0 0 gets stuck oscillating
-2001 2 Goal 31.7 0 none
+2001 2 Goal 47.3 0 none
 2002 3 Timeout 60.0 0 gets stuck in a dead end
-2003 4 Goal 45.3 0 none
+2003 4 Timeout 60.0 0 gets stuck oscillating
 2004 5 Timeout 60.0 0 gets stuck oscillating
-2005 6 Goal 25.4 0 none
+2005 6 Goal 36.0 0 none
 2006 7 Timeout 60.0 0 gets stuck oscillating
 2007 8 Timeout 60.0 0 gets stuck oscillating
-2008 9 Timeout 60.0 0 gets stuck oscillating
-2009 10 Timeout 60.0 0 gets stuck oscillating
+2008 9 Goal 59.0 0 none
+2009 10 Collision 30.5 0 hits obstacles head-on

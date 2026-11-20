@@ -1,456 +1,526 @@
+
 using System;
 using UnityEngine;
 
 public class LLM_ChatGPT_2_FB : IRoverController
 {
-    public string Name => "Adaptive Navigation V3";
+    public string Name => "Adaptive Navigation V4";
 
-    // Sensor indices:
-    // 0 Front
-    // 1 Left (+45)
-    // 2 Right (-45)
-    // 3 LeftSide (+90)
-    // 4 RightSide (-90)
+    // Filtered sensor readings
+    private float fFront, fLeft, fRight, fLeftSide, fRightSide;
+    private bool sensorsInitialized;
 
-    private float[] sensors = new float[5];
-    private int[] falseClear = new int[5];
+    private int frontClearTicks;
+    private int leftClearTicks;
+    private int rightClearTicks;
+    private int leftSideClearTicks;
+    private int rightSideClearTicks;
 
-    private bool initialized;
+    // Obstacle avoidance state
+    private bool avoiding;
+    private int avoidDirection;
+    private int avoidTicks;
+    private int avoidClearTicks;
+
+    // Steering stability
+    private float previousTurn;
+    private int lastTurnDirection;
+    private int turnCommitTicks;
 
     // Progress monitoring
-    private float bestGoalDistance;
-    private int stuckTicks;
-    private int recoveryTicks;
-    private int recoveryCooldown;
+    private float progressReference;
+    private int progressTimer;
+    private int noProgressWindows;
 
-    // Recovery direction
+    // Recovery state
+    private bool recovering;
     private int recoveryDirection;
-    private int preferredDirection;
+    private int recoveryTicks;
+    private int recoveryAttempts;
 
-    // Steering memory
-    private float previousTurn;
-
-    // Dead-end detection
-    private int blockedTicks;
-
-    private const float MAX_RANGE = 4f;
+    private const float SENSOR_MAX = 4.0f;
 
     public void ResetController()
     {
-        for (int i = 0; i < 5; i++)
-        {
-            sensors[i] = MAX_RANGE;
-            falseClear[i] = 0;
-        }
+        fFront = 4f;
+        fLeft = 4f;
+        fRight = 4f;
+        fLeftSide = 4f;
+        fRightSide = 4f;
 
-        initialized = false;
+        sensorsInitialized = false;
 
-        bestGoalDistance = 999f;
-        stuckTicks = 0;
-        recoveryTicks = 0;
-        recoveryCooldown = 0;
+        frontClearTicks = 0;
+        leftClearTicks = 0;
+        rightClearTicks = 0;
+        leftSideClearTicks = 0;
+        rightSideClearTicks = 0;
 
-        recoveryDirection = 1;
-        preferredDirection = 1;
+        avoiding = false;
+        avoidDirection = 1;
+        avoidTicks = 0;
+        avoidClearTicks = 0;
 
         previousTurn = 0f;
-        blockedTicks = 0;
+        lastTurnDirection = 1;
+        turnCommitTicks = 0;
+
+        progressReference = 0f;
+        progressTimer = 0;
+        noProgressWindows = 0;
+
+        recovering = false;
+        recoveryDirection = 1;
+        recoveryTicks = 0;
+        recoveryAttempts = 0;
     }
 
-    private float Clamp(float value, float min, float max)
+    private float Clean(float value)
     {
-        return Mathf.Clamp(value, min, max);
+        if (float.IsNaN(value) || float.IsInfinity(value))
+            return SENSOR_MAX;
+
+        return Mathf.Clamp(value, 0.02f, SENSOR_MAX);
     }
 
-    // ---------------------------------------------
-    // SENSOR FILTERING
-    // ---------------------------------------------
-
-    private float ReadSensor(float raw, int index)
+    // Closer readings are accepted quickly.
+    // Sudden large increases are accepted more cautiously
+    // to reduce the effect of occasional false-clear readings.
+    private float FilterSensor(
+        float raw,
+        ref float filtered,
+        ref int clearTicks)
     {
-        raw = Clamp(raw, 0.02f, MAX_RANGE);
+        raw = Clean(raw);
 
-        if (!initialized)
+        if (!sensorsInitialized)
         {
-            sensors[index] = raw;
-            return raw;
+            filtered = raw;
+            clearTicks = 0;
+            return filtered;
         }
 
-        // Ignore occasional false-clear readings.
-        if (raw >= 3.95f && sensors[index] < 3.5f)
+        if (raw < filtered)
         {
-            falseClear[index]++;
+            filtered = Mathf.Lerp(filtered, raw, 0.72f);
+            clearTicks = 0;
+        }
+        else if (raw > filtered + 1.1f)
+        {
+            clearTicks++;
 
-            if (falseClear[index] < 3)
-                return sensors[index];
+            if (clearTicks >= 2)
+            {
+                filtered = Mathf.Lerp(filtered, raw, 0.30f);
+                clearTicks = 0;
+            }
         }
         else
         {
-            falseClear[index] = 0;
+            filtered = Mathf.Lerp(filtered, raw, 0.24f);
+            clearTicks = 0;
         }
 
-        // React quickly to approaching obstacles.
-        if (raw < sensors[index])
-        {
-            sensors[index] =
-                0.80f * raw + 0.20f * sensors[index];
-        }
-        else
-        {
-            sensors[index] =
-                0.30f * raw + 0.70f * sensors[index];
-        }
-
-        return sensors[index];
+        return filtered;
     }
 
     private float Danger(float distance, float threshold)
     {
-        return Clamp(
-            (threshold - distance) / threshold,
-            0f,
-            1f
+        return Mathf.Clamp01(
+            (threshold - distance) / threshold
         );
     }
 
-    // ---------------------------------------------
-    // DIRECTION SELECTION
-    // ---------------------------------------------
-
-    private int ChooseDirection(
-        float left,
-        float right,
-        float leftSide,
-        float rightSide,
-        float goalAngle)
+    private float LeftClearance()
     {
-        // Score clearance in both directions.
-        float leftScore =
-            0.55f * left +
-            0.45f * leftSide;
+        return 0.55f * fLeft + 0.45f * fLeftSide;
+    }
 
-        float rightScore =
-            0.55f * right +
-            0.45f * rightSide;
+    private float RightClearance()
+    {
+        return 0.55f * fRight + 0.45f * fRightSide;
+    }
 
-        // Slight preference for the direction
-        // that brings the rover towards the goal.
-        if (goalAngle > 15f)
+    // Positive direction means left.
+    private int ChooseDirection(float goalAngle)
+    {
+        float leftScore = LeftClearance();
+        float rightScore = RightClearance();
+
+        // Slight preference for the direction that moves
+        // the rover closer to the goal heading.
+        if (goalAngle > 12f)
             leftScore += 0.20f;
-
-        if (goalAngle < -15f)
+        else if (goalAngle < -12f)
             rightScore += 0.20f;
 
-        // Avoid switching directions unnecessarily.
-        if (Mathf.Abs(leftScore - rightScore) < 0.12f)
-            return preferredDirection;
+        // Prefer the previous direction when the choices
+        // are almost equally clear.
+        if (Mathf.Abs(leftScore - rightScore) < 0.30f)
+            return lastTurnDirection;
 
-        int direction =
-            leftScore > rightScore ? 1 : -1;
-
-        preferredDirection = direction;
-
-        return direction;
+        return leftScore > rightScore ? 1 : -1;
     }
 
-    // ---------------------------------------------
-    // RECOVERY ACTIVATION
-    // ---------------------------------------------
-
-    private void StartRecovery(int direction)
+    private void StartAvoidance(float goalAngle)
     {
-        recoveryDirection = direction;
+        avoiding = true;
+        avoidDirection = ChooseDirection(goalAngle);
+        avoidTicks = 0;
+        avoidClearTicks = 0;
 
-        // Approximately two seconds of turning.
-        // Reassess after this period.
-        recoveryTicks = 40;
-
-        stuckTicks = 0;
-        blockedTicks = 0;
-
-        recoveryCooldown = 55;
+        lastTurnDirection = avoidDirection;
+        turnCommitTicks = 15;
     }
 
-    // ---------------------------------------------
-    // MAIN CONTROLLER
-    // ---------------------------------------------
-
-    public (float speed01, float turn) Decide(Observation obs)
+    private void UpdateAvoidance(float goalAngle)
     {
-        float front = ReadSensor(obs.front, 0);
-        float left = ReadSensor(obs.left, 1);
-        float right = ReadSensor(obs.right, 2);
-        float leftSide = ReadSensor(obs.leftSide, 3);
-        float rightSide = ReadSensor(obs.rightSide, 4);
+        if (!avoiding)
+            return;
 
-        initialized = true;
+        avoidTicks++;
 
-        float goalDistance = Mathf.Max(0f, obs.goalDistance);
+        float selectedClearance =
+            avoidDirection > 0
+                ? LeftClearance()
+                : RightClearance();
 
-        float goalAngle = Clamp(
-            obs.goalAngleDeg,
-            -180f,
-            180f
-        );
+        float otherClearance =
+            avoidDirection > 0
+                ? RightClearance()
+                : LeftClearance();
 
-        // -----------------------------------------
-        // 1. GOAL REACHED
-        // -----------------------------------------
-
-        if (goalDistance < 0.18f)
+        // Only change direction when the current direction
+        // is substantially worse and the commitment period
+        // has elapsed.
+        if (avoidTicks > 15 &&
+            otherClearance > selectedClearance + 0.65f)
         {
-            previousTurn = 0f;
-            return (0f, 0f);
+            avoidDirection = -avoidDirection;
+            lastTurnDirection = avoidDirection;
+            avoidTicks = 0;
         }
 
-        // -----------------------------------------
-        // 2. PROGRESS MONITORING
-        // -----------------------------------------
-
-        if (goalDistance < bestGoalDistance - 0.025f)
+        // Exit when the forward route has opened.
+        // This does not require both side sensors to be clear,
+        // which helps in narrow corridors.
+        if (fFront > 1.55f &&
+            (fLeft > 0.85f || fRight > 0.85f))
         {
-            bestGoalDistance = goalDistance;
-            stuckTicks = 0;
+            avoidClearTicks++;
         }
         else
         {
-            stuckTicks++;
+            avoidClearTicks = 0;
         }
 
-        if (recoveryCooldown > 0)
-            recoveryCooldown--;
-
-        // -----------------------------------------
-        // 3. DEAD-END DETECTION
-        // -----------------------------------------
-
-        bool frontBlocked = front < 0.65f;
-
-        bool leftBlocked = left < 0.70f;
-        bool rightBlocked = right < 0.70f;
-
-        bool bothSidesBlocked =
-            leftBlocked && rightBlocked;
-
-        if (frontBlocked && bothSidesBlocked)
+        if (avoidTicks >= 12 && avoidClearTicks >= 5)
         {
-            blockedTicks++;
+            avoiding = false;
+            avoidTicks = 0;
+            avoidClearTicks = 0;
         }
-        else
+    }
+
+    private void UpdateProgress(float goalDistance)
+    {
+        progressTimer++;
+
+        if (progressTimer == 1)
         {
-            blockedTicks = Mathf.Max(
-                0, blockedTicks - 1
-            );
+            progressReference = goalDistance;
         }
 
-        // Detect dead ends even if the goal distance
-        // temporarily increases during navigation.
-        bool deadEnd =
-            blockedTicks >= 5;
-
-        // General lack of progress.
-        bool noProgress =
-            stuckTicks >= 50;
-
-        if (recoveryTicks <= 0 &&
-            recoveryCooldown <= 0 &&
-            (deadEnd || noProgress))
+        // Check progress approximately every 1.5 seconds.
+        if (progressTimer >= 30)
         {
-            int direction = ChooseDirection(
-                left,
-                right,
-                leftSide,
-                rightSide,
-                goalAngle
-            );
+            float improvement =
+                progressReference - goalDistance;
 
-            StartRecovery(direction);
-        }
-
-        // -----------------------------------------
-        // 4. RECOVERY MODE
-        // -----------------------------------------
-
-        if (recoveryTicks > 0)
-        {
-            recoveryTicks--;
-
-            // Turn consistently instead of repeatedly
-            // switching between left and right.
-
-            float recoveryTurn =
-                recoveryDirection * 1.0f;
-
-            // Slow forward arc to turn around safely.
-            float recoverySpeed = 0.22f;
-
-            // If the front is still blocked, maintain
-            // the turning direction and reduce speed.
-            if (front < 0.45f)
+            if (improvement > 0.07f)
             {
-                recoverySpeed = 0.10f;
+                noProgressWindows = 0;
+                recoveryAttempts = 0;
+            }
+            else
+            {
+                noProgressWindows++;
             }
 
-            // If the rover has turned towards an open
-            // direction, it can begin moving faster.
-            if (front > 1.0f &&
-                recoveryTicks < 20)
-            {
-                recoverySpeed = 0.30f;
-            }
-
-            previousTurn = recoveryTurn;
-
-            return (
-                recoverySpeed,
-                recoveryTurn
-            );
+            progressReference = goalDistance;
+            progressTimer = 0;
         }
+    }
 
-        // -----------------------------------------
-        // 5. GOAL SEEKING
-        // -----------------------------------------
+    private void StartRecovery(float goalAngle)
+    {
+        recovering = true;
 
-        float goalTurn = Clamp(
-            goalAngle / 65f,
-            -1f,
-            1f
-        );
+        recoveryDirection = ChooseDirection(goalAngle);
+        recoveryTicks = 22;
 
-        // -----------------------------------------
-        // 6. OBSTACLE AVOIDANCE
-        // -----------------------------------------
+        recoveryAttempts++;
 
-        float frontDanger =
-            Danger(front, 1.10f);
+        lastTurnDirection = recoveryDirection;
+        turnCommitTicks = 15;
 
-        float leftDanger =
-            Danger(left, 0.90f);
+        // Reset progress monitoring so the controller
+        // can evaluate the result of this manoeuvre.
+        noProgressWindows = 0;
+        progressTimer = 0;
+    }
 
-        float rightDanger =
-            Danger(right, 0.90f);
+    private (float speed, float turn) RecoveryCommand()
+    {
+        recoveryTicks--;
 
-        float leftSideDanger =
-            Danger(leftSide, 0.48f);
+        float speed = 0.20f;
+        float turn = recoveryDirection;
 
-        float rightSideDanger =
-            Danger(rightSide, 0.48f);
-
-        // Prefer the direction with more clearance.
-        int openDirection = ChooseDirection(
-            left,
-            right,
-            leftSide,
-            rightSide,
-            goalAngle
-        );
-
-        // Front avoidance.
-        float frontAvoidance =
-            openDirection * frontDanger * 1.45f;
-
-        // Diagonal avoidance.
-        float diagonalAvoidance =
-            1.05f * (rightDanger - leftDanger);
-
-        // Side protection.
-        float sideAvoidance =
-            0.65f * (rightSideDanger - leftSideDanger);
-
-        float avoidance =
-            frontAvoidance +
-            diagonalAvoidance +
-            sideAvoidance;
-
-        // -----------------------------------------
-        // 7. DYNAMIC STEERING PRIORITY
-        // -----------------------------------------
-
-        float goalWeight = 1.0f;
-
-        if (front < 1.20f)
-            goalWeight = 0.35f;
-
-        if (front < 0.75f)
-            goalWeight = 0.10f;
-
-        if (front < 0.45f)
-            goalWeight = 0f;
-
-        float turn =
-            goalTurn * goalWeight +
-            avoidance;
-
-        // Strong emergency turning.
-        if (front < 0.45f)
+        // Give the rover a stronger turn if the front is blocked.
+        if (fFront < 0.55f)
         {
-            turn = openDirection;
+            speed = 0.12f;
+            turn = recoveryDirection;
         }
 
-        // Prevent excessive steering.
-        turn = Clamp(turn, -1f, 1f);
+        if (fFront < 0.22f)
+        {
+            speed = 0.07f;
+        }
 
-        // Moderate smoothing.
-        turn =
-            0.85f * turn +
-            0.15f * previousTurn;
+        if (recoveryTicks <= 0)
+        {
+            recovering = false;
 
-        turn = Clamp(turn, -1f, 1f);
+            // If the front is still blocked, allow another
+            // short recovery attempt and reconsider direction.
+            if (fFront < 0.55f && recoveryAttempts < 4)
+            {
+                if (recoveryAttempts >= 2)
+                {
+                    float left = LeftClearance();
+                    float right = RightClearance();
+
+                    if (recoveryDirection > 0 &&
+                        right > left + 0.20f)
+                    {
+                        recoveryDirection = -1;
+                    }
+                    else if (recoveryDirection < 0 &&
+                             left > right + 0.20f)
+                    {
+                        recoveryDirection = 1;
+                    }
+                }
+
+                recovering = true;
+                recoveryTicks = 18;
+                turn = recoveryDirection;
+            }
+            else
+            {
+                recoveryAttempts = 0;
+            }
+        }
 
         previousTurn = turn;
 
-        // -----------------------------------------
-        // 8. ADAPTIVE SPEED CONTROL
-        // -----------------------------------------
+        return (speed, turn);
+    }
 
-        float speed = 0.85f;
+    public (float speed01, float turn) Decide(Observation obs)
+    {
+        float rawFront = Clean(obs.front);
+        float rawLeft = Clean(obs.left);
+        float rawRight = Clean(obs.right);
+        float rawLeftSide = Clean(obs.leftSide);
+        float rawRightSide = Clean(obs.rightSide);
 
-        // Gradual speed reduction near front obstacles.
-        if (front < 1.50f)
+        if (!sensorsInitialized)
         {
-            float safeSpeed = Clamp(
-                (front - 0.22f) / 1.28f,
-                0f,
-                1f
-            );
+            fFront = rawFront;
+            fLeft = rawLeft;
+            fRight = rawRight;
+            fLeftSide = rawLeftSide;
+            fRightSide = rawRightSide;
 
+            sensorsInitialized = true;
+        }
+        else
+        {
+            FilterSensor(rawFront, ref fFront, ref frontClearTicks);
+            FilterSensor(rawLeft, ref fLeft, ref leftClearTicks);
+            FilterSensor(rawRight, ref fRight, ref rightClearTicks);
+            FilterSensor(rawLeftSide, ref fLeftSide, ref leftSideClearTicks);
+            FilterSensor(rawRightSide, ref fRightSide, ref rightSideClearTicks);
+        }
+
+        float goalDistance = Mathf.Max(0f, obs.goalDistance);
+        float goalAngle = Mathf.Clamp(
+            obs.goalAngleDeg, -180f, 180f
+        );
+
+        UpdateProgress(goalDistance);
+
+        // Recovery takes priority over normal navigation.
+        if (recovering)
+            return RecoveryCommand();
+
+        // Detect a persistent lack of progress.
+        // Two consecutive windows means approximately 3 seconds
+        // without meaningful improvement.
+        if (noProgressWindows >= 2)
+        {
+            StartRecovery(goalAngle);
+            return RecoveryCommand();
+        }
+
+        // Start avoidance only when the forward route or
+        // diagonal approaches indicate a genuine obstacle.
+        bool frontBlocked = fFront < 1.15f;
+
+        bool leftDiagonalBlocked = fLeft < 0.62f;
+        bool rightDiagonalBlocked = fRight < 0.62f;
+
+        bool bothDiagonalsBlocked =
+            leftDiagonalBlocked && rightDiagonalBlocked;
+
+        if (!avoiding &&
+            (frontBlocked || bothDiagonalsBlocked))
+        {
+            StartAvoidance(goalAngle);
+        }
+
+        UpdateAvoidance(goalAngle);
+
+        // Goal steering.
+        float goalTurn = Mathf.Clamp(
+            goalAngle / 65f, -1f, 1f
+        );
+
+        // Reduce goal steering when an obstacle is close.
+        float frontDanger = Danger(fFront, 1.25f);
+
+        float goalWeight =
+            1f - 0.70f * frontDanger;
+
+        float turn = goalTurn * goalWeight;
+
+        // Smooth obstacle avoidance.
+        if (avoiding)
+        {
+            float avoidanceStrength =
+                0.48f + 0.42f * frontDanger;
+
+            turn =
+                turn * (1f - avoidanceStrength) +
+                avoidDirection * avoidanceStrength;
+        }
+        else
+        {
+            // Gentle diagonal and side obstacle avoidance.
+            float leftDanger = Danger(fLeft, 0.85f);
+            float rightDanger = Danger(fRight, 0.85f);
+
+            float leftSideDanger = Danger(fLeftSide, 0.45f);
+            float rightSideDanger = Danger(fRightSide, 0.45f);
+
+            float sideCorrection =
+                (rightDanger - leftDanger) * 0.42f +
+                (rightSideDanger - leftSideDanger) * 0.25f;
+
+            turn += sideCorrection;
+        }
+
+        // Emergency response for a very close front obstacle.
+        if (fFront < 0.38f)
+        {
+            int emergencyDirection =
+                ChooseDirection(goalAngle);
+
+            turn = emergencyDirection;
+        }
+
+        turn = Mathf.Clamp(turn, -1f, 1f);
+
+        // Steering hysteresis:
+        // prevent rapid left-right changes caused by small
+        // sensor fluctuations.
+        if (turnCommitTicks > 0)
+        {
+            if (Mathf.Abs(turn) > 0.18f &&
+                Mathf.Sign(turn) != Mathf.Sign(previousTurn) &&
+                Mathf.Abs(previousTurn) > 0.35f)
+            {
+                turn = previousTurn * 0.65f +
+                       turn * 0.35f;
+            }
+
+            turnCommitTicks--;
+        }
+
+        // Smooth steering without excessive delay.
+        turn = previousTurn * 0.72f + turn * 0.28f;
+
+        // Remember meaningful steering direction.
+        if (Mathf.Abs(turn) > 0.18f)
+        {
+            lastTurnDirection = turn > 0f ? 1 : -1;
+        }
+
+        previousTurn = turn;
+
+        // Adaptive speed.
+        float speed = 0.82f;
+
+        if (fFront < 1.60f)
+        {
             speed = Mathf.Min(
                 speed,
-                0.70f * safeSpeed
+                0.30f + 0.42f * Mathf.Clamp01(fFront / 1.60f)
             );
         }
 
-        // Diagonal clearance.
-        if (left < 0.65f || right < 0.65f)
+        if (fFront < 0.75f)
+        {
+            speed = Mathf.Min(speed, 0.28f);
+        }
+
+        if (fFront < 0.38f)
+        {
+            speed = Mathf.Min(speed, 0.13f);
+        }
+
+        if (Mathf.Abs(turn) > 0.70f)
+        {
+            speed = Mathf.Min(speed, 0.38f);
+        }
+        else if (Mathf.Abs(turn) > 0.45f)
+        {
+            speed = Mathf.Min(speed, 0.55f);
+        }
+
+        // Avoid scraping nearby side obstacles.
+        if (fLeftSide < 0.30f ||
+            fRightSide < 0.30f)
+        {
+            speed = Mathf.Min(speed, 0.25f);
+        }
+
+        // Slow down near the goal.
+        if (goalDistance < 0.45f)
         {
             speed = Mathf.Min(speed, 0.30f);
         }
 
-        // Side clearance.
-        if (leftSide < 0.27f ||
-            rightSide < 0.27f)
+        if (goalDistance < 0.18f)
         {
-            speed = Mathf.Min(speed, 0.25f);
+            speed = Mathf.Min(speed, 0.15f);
         }
 
-        // Turning speed.
-        float turnMagnitude = Mathf.Abs(turn);
-
-        if (turnMagnitude > 0.50f)
-            speed = Mathf.Min(speed, 0.40f);
-
-        if (turnMagnitude > 0.80f)
-            speed = Mathf.Min(speed, 0.25f);
-
-        // Extremely close obstacle.
-        if (front < 0.22f)
-            speed = 0f;
-
-        // Approach the goal carefully.
-        if (goalDistance < 0.40f)
-            speed = Mathf.Min(speed, 0.25f);
-
-        speed = Clamp(speed, 0f, 1f);
+        speed = Mathf.Clamp01(speed);
+        turn = Mathf.Clamp(turn, -1f, 1f);
 
         return (speed, turn);
     }
