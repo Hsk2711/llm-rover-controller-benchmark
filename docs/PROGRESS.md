@@ -173,8 +173,9 @@ Checklist of project phases. Update at the end of each phase.
   (what the experiment runner must use) = baselines + kind Llm only, so excluded files can never enter a run. Quick Test can still run them
   (listed last). `Rover > Check LLM Files` lists excluded files and flags any file in Excluded/ whose file or class name lacks the suffix.
 - Verified: ExperimentNames = Bug2Controller, RuleBasedController; Excluded = LLM_ChatGPT_1_OS_excluded; Llm = 0; misnamed = 0.
-- Attempt numbers: ChatGPT attempt 1 is used up; the next ChatGPT file should be attempt 2 (decide with the supervisor whether the attempt count of 30 per study
-  still needs a replacement for the excluded one).
+- Attempt numbers: VALID attempts are numbered 1-5 per chatbot; the excluded file is not counted. The first valid ChatGPT attempt (temporary chat,
+  one-shot, does not compile: CS0136 at line 343) is therefore `LLM_ChatGPT_1_OS.cs` (first saved as _2_, renamed file and class, no other change).
+  The excluded file keeps its `_excluded` name and log row (also shown as attempt 1, but flagged excluded in the notes).
 
 ## Notes for later phases
 
