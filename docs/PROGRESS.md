@@ -137,7 +137,11 @@ Checklist of project phases. Update at the end of each phase.
   Checked on the existing controllers: RuleBased 10/10, Bug2 5/10 (head-on collisions), Stop 0/10 (timeouts). Nothing run on test maps.
 - `results/llm_generation_log.csv`: header only (model, model_version, date, attempt, one_shot_compiled, feedback_rounds,
   final_compiled, final_quicktest_score, human_minutes, notes).
-- Still to do: save the task specification as `docs/llm_task_spec.txt` (unchanged, text not yet received).
+- `docs/llm_task_spec.txt` saved unchanged (see the open issue below).
+
+- OPEN ISSUE (found 2026-11-20): the saved task spec still describes the 3-sensor platform (Observation with front, left, right only)
+  and asks for a class named `LLM_Controller`. The platform has 5 sensors since the pilot revision (Observation also has
+  leftSide, rightSide) and the file/class naming rule is LLM_<Model>_<Attempt>_<Cond>. Decision pending from the user; the file is kept unchanged.
 
 ## Notes for later phases
 
