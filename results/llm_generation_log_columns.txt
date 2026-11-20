@@ -1,0 +1,6 @@
+Column definitions for results/llm_generation_log.csv (kept here because a CSV header row cannot carry comments without breaking readers)
+- model, model_version, date, attempt (valid attempts 1-5 per chatbot; X1 = excluded attempt, not a temporary chat), 
+  one_shot_compiled, feedback_rounds (max 3, compile-error rounds count), final_compiled, final_quicktest_score (of the LAST round used),
+  notes.
+- human_minutes = active human time per attempt, from opening the chatbot chat to the final code being saved,
+  EXCLUDING time waiting for compile and Quick Test. Values entered after the fact are marked "estimated afterwards" in notes.

@@ -262,3 +262,8 @@ Checklist of project phases. Update at the end of each phase.
 ### Gemini attempt 1 - feedback round 3 (final)
 - Round 3 compiles (class renamed only); Name "CleanWallSeekNavigator". Quick Test 9/10 (1 collision, 0 timeouts, head-on). FINAL FB result = 9/10 (last-round rule).
   Scores: OS 5, r1 5, r2 3, r3 9. All files in `LLM_History/`. Attempt closed (3 of 3 rounds used). model_version, human_minutes still to fill.
+
+### human_minutes definition (2026-11-20)
+- human_minutes = active human time per attempt, from opening the chatbot chat to the final code being saved, excluding time waiting for compile and Quick Test.
+  Corrected values (estimated afterwards): Gemini attempt 1 = 5, ChatGPT attempt 1 = 10, ChatGPT attempt 2 = 8 (were 20, 30, 25 under the old definition).
+  Definition also in CLAUDE.md and results/llm_generation_log_columns.txt.
