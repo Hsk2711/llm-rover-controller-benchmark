@@ -75,7 +75,7 @@ def update_log(file_name, first_error):
         target[4] = "FALSE"
     else:
         target[6] = "FALSE"
-    if "LLM_NoCompile" not in target[9]:
+    if (file_name + ".cs moved") not in target[9]:
         target[9] = (target[9] + " | " if target[9] else "") + note
     out = io.StringIO()
     csv.writer(out, lineterminator=nl).writerows(rows)

@@ -195,7 +195,11 @@ Checklist of project phases. Update at the end of each phase.
 ## Feedback protocol (2026-11-20)
 
 - Up to 3 feedback rounds per attempt in total (compile-error rounds count); stop early at 10/10. Written into CLAUDE.md (Rules).
-- Status: ChatGPT attempt 1 has used 1 round (the compile error; FB file compiles, Quick Test 3/10), so at most 2 rounds remain.
+- Status: ChatGPT attempt 1 has used 2 of 3 rounds. Round 1 (compile error sent back): FB file compiled, Quick Test 3/10 (copy in `llm_rounds/LLM_ChatGPT_1_FB_round1.cs`).
+  Round 2 (Quick Test report sent back): the new FB file did NOT compile (CS0136 at line 414); it replaced the round-1 file, was moved unedited to
+  `LLM_NoCompile/LLM_ChatGPT_1_FB.cs` and the project compiles. 1 round remains. OPEN: is the attempt's final result the LATEST round or the best compiled one?
+  Until decided, the log has final_compiled FALSE and an empty score; the experiment currently counts LLM_ChatGPT_1_FB as no_compile (and _OS too).
+- `llm_rounds/` (outside Assets) keeps a copy of every round's file as evidence.
 
 ## Notes for later phases
 
