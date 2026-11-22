@@ -454,3 +454,6 @@ Finish line received: 3 feedback rounds, model "Gemini, Auto mode, Temporary Cha
 
 ### Claude attempt 4 - one-shot
 Incognito chat. Class and constructor renamed to LLM_Claude_4_OS, nothing else. Compiles. Name = "LLM_Controller (DistBug wall follower)". Quick Test 10/10 (0 restarts) -> stopped early, 0 feedback rounds; LLM_Claude_4_FB.cs = exact copy (FB = OS). Model and minutes still to be filled.
+
+### Claude attempt 4 - finished
+Finish line: 0 feedback rounds, model Claude Opus 5.5 (incognito chat), human minutes 4. Final FB = OS = 10/10. Log row completed.
