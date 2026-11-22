@@ -311,3 +311,7 @@ Checklist of project phases. Update at the end of each phase.
 ### ChatGPT attempt 3 - feedback round 3 (final)
 - Round 3 compiles (class renamed only); Name "Persistent Adaptive Navigation V3". Quick Test 2/10 (0 collisions, 8 timeouts, oscillating). FINAL FB result = 2/10 (last-round rule).
   Scores: OS no_compile, r1 2, r2 1, r3 2. Files in `LLM_History/`. Attempt closed (3 of 3 rounds used). model_version, human_minutes still to fill.
+
+### Gemini attempt 2 - one-shot (OS)
+- LLM_Gemini_2_OS.cs saved (class renamed only), compiles. Name property "LLM_Controller" (untouched). Quick Test 8/10 (0 collisions, 2 timeouts, oscillating) via run_quicktest.py (0 restarts).
+  Attempt open (0 of 3 rounds used). model_version, human_minutes still to fill.
