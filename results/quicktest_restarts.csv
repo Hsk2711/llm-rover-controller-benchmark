@@ -12,3 +12,8 @@ date,controller,restarts,seconds,outcome,report
 2026-11-22 12:44:52,LLM_Gemini_2_FB,0,63,ok,"Test report: 6/10 reached the goal, 0 collisions, 4 timeouts (got stuck), 0 runtime errors. Most common failure: gets stuck oscillating."
 2026-11-22 12:55:16,LLM_Claude_2_OS,1,114,ok,"Test report: 10/10 reached the goal, 0 collisions, 0 timeouts (got stuck), 0 runtime errors. Most common failure: none."
 2026-11-22 13:00:21,LLM_Claude_2_FB,4,282,ok,"Test report: 10/10 reached the goal, 0 collisions, 0 timeouts (got stuck), 0 runtime errors. Most common failure: none."
+2026-11-22 13:23:38,LLM_ChatGPT_4_OS,5,296,failed,
+2026-11-22 13:29:35,LLM_ChatGPT_4_OS,5,340,failed,
+2026-11-22 13:34:49,RuleBasedController,5,309,failed,
+2026-11-22 13:39:24,RuleBasedController,0,39,ok,"Test report: 10/10 reached the goal, 0 collisions, 0 timeouts (got stuck), 0 runtime errors. Most common failure: none."
+2026-11-22 13:40:28,LLM_ChatGPT_4_OS,0,60,ok,"Test report: 2/10 reached the goal, 1 collisions, 7 timeouts (got stuck), 0 runtime errors. Most common failure: gets stuck in a dead end."

@@ -333,3 +333,9 @@ Checklist of project phases. Update at the end of each phase.
   FB = OS: LLM_Claude_2_FB.cs created by tools/ensure_fb_files.py (same two identifier renames), compiles, Quick Test 10/10 (4 restarts).
 - Stall note for Phase 7: the Play-mode stalls cluster right after a NEW script was added and compiled (this attempt: 1 and 4 restarts; earlier ones in the same situation).
   Single-controller reruns without a new script did not stall. See results/quicktest_restarts.csv.
+
+### ChatGPT attempt 4 - one-shot (OS)
+- LLM_ChatGPT_4_OS.cs saved (class renamed only), compiles. Name "Hybrid Bug Navigation Controller". Quick Test 2/10 (1 collision, 7 timeouts, dead end). Attempt open (0 of 3 rounds used).
+- Stall episode (for the Phase 7 review): the Editor process had been restarted; for ~15 min every driver run failed (3 runs x 5 restarts, RuleBased too) although a plain
+  `editor.playmode start` and a hand-started Quick Test worked in the same Editor, and later the driver itself worked with 0 restarts. So these were not controller-related;
+  recorded as outcome "failed" rows in results/quicktest_restarts.csv. Idea for the overnight runner: a longer restart budget with back-off, and a pre-warm Play entry after every Editor start.
