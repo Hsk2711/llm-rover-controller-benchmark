@@ -295,3 +295,7 @@ Checklist of project phases. Update at the end of each phase.
 - Rule (CLAUDE.md): each valid attempt has an OS and an FB file; a 10/10 one-shot gets FB = exact copy of OS (identifier rename only). Tool: `tools/ensure_fb_files.py` (`--check` to report).
 - Created LLM_Claude_1_FB.cs (class AND constructor renamed, 2 occurrences). Quick Test via run_quicktest.py gives the same 10/10 as the OS. Audit: ChatGPT 1 (OS no_compile, FB r3),
   ChatGPT 2 (OS, FB r3) and Gemini 1 (OS 5/10, FB r3) already had both files; excluded attempts are ignored. Only Claude 1 was missing.
+
+### ChatGPT attempt 3 - one-shot (OS)
+- LLM_ChatGPT_3_OS.cs (class renamed only) does NOT compile: CS0019 at (251,13), `obs == null` on the struct Observation. Quarantined to LLM_NoCompile/ (copy in LLM_History/).
+  Name property: "Adaptive Goal Navigation". Attempt open, 0 of 3 rounds used (a compile-error round counts).
