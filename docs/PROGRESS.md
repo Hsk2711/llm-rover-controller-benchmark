@@ -472,3 +472,6 @@ Class and constructor renamed to LLM_Gemini_5_FB, nothing else; replaced the rou
 
 ### Gemini attempt 5 - finished
 Finish line (labelled "Gemini attempt 6" by the user; taken as attempt 5, the only open Gemini attempt): 3 feedback rounds, model "Gemini, Auto mode, Temporary Chat, free plan". Human minutes not given (placeholder "M"), left empty.
+
+### Claude attempt 5 - one-shot
+Incognito chat. Class and constructor renamed to LLM_Claude_5_OS, nothing else. Compiles. Name = "LLM_Controller". Quick Test 10/10 (0 restarts) -> stopped early, 0 feedback rounds; LLM_Claude_5_FB.cs = exact copy (FB = OS). Model and minutes still to be filled.

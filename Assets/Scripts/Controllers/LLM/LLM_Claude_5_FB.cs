@@ -1,0 +1,439 @@
+using System;
+using UnityEngine;
+
+public class LLM_Claude_5_FB : IRoverController
+{
+    public string Name => "LLM_Controller";
+
+    // ---------------- constants ----------------
+    private const float DT = 0.05f;
+    private const float VMAX = 0.3f;          // m/s
+    private const float WMAX_DEG = 90f;       // deg/s
+    private const float MAX_RANGE = 4.0f;
+
+    // Wall-following parameters
+    private const float WALL_DIST = 0.22f;     // desired side-sensor distance
+    private const float FRONT_BLOCK = 0.32f;   // front distance that triggers wall following
+    private const float INNER_CORNER = 0.30f;  // front distance -> rotate away while following
+    private const float LEAVE_STEP = 0.12f;    // required progress for leaving a wall (m)
+
+    private enum Mode { GoToGoal, FollowWall }
+
+    // ---------------- sensor filtering ----------------
+    // index: 0 front, 1 left(+45), 2 right(-45), 3 leftSide(+90), 4 rightSide(-90)
+    private readonly float[,] hist = new float[5, 3];
+    private readonly float[] lastValid = new float[5];
+    private readonly int[] dropCount = new int[5];
+    private int histIdx;
+    private bool firstFrame;
+
+    // ---------------- state ----------------
+    private Mode mode;
+    private int wallSide;           // +1 = wall on left, -1 = wall on right
+    private float hitDist;          // goal distance where wall following started
+    private float dMin;             // min goal distance during the current follow
+    private float followTime;
+    private float leaveCooldown;
+    private float timeSinceLeave;
+    private int lastWallSide;
+    private float totalTime;
+    private float lastTurnSignBehind;
+
+    // odometry (dead-reckoned from our own commands)
+    private float px, py, heading;
+    private float hitX, hitY;
+    private float travelSinceHit;
+    private int loopCount;
+
+    public LLM_Claude_5_FB()
+    {
+        ResetController();
+    }
+
+    public void ResetController()
+    {
+        for (int i = 0; i < 5; i++)
+        {
+            for (int k = 0; k < 3; k++) hist[i, k] = MAX_RANGE;
+            lastValid[i] = MAX_RANGE;
+            dropCount[i] = 0;
+        }
+        histIdx = 0;
+        firstFrame = true;
+
+        mode = Mode.GoToGoal;
+        wallSide = -1;
+        hitDist = float.MaxValue;
+        dMin = float.MaxValue;
+        followTime = 0f;
+        leaveCooldown = 0f;
+        timeSinceLeave = 100f;
+        lastWallSide = -1;
+        totalTime = 0f;
+        lastTurnSignBehind = 1f;
+
+        px = py = heading = 0f;
+        hitX = hitY = 0f;
+        travelSinceHit = 0f;
+        loopCount = 0;
+    }
+
+    // ======================================================================
+    public (float speed01, float turn) Decide(Observation obs)
+    {
+        totalTime += DT;
+        if (leaveCooldown > 0f) leaveCooldown -= DT;
+        timeSinceLeave += DT;
+
+        // ---------- filter sensors ----------
+        float[] raw = { obs.front, obs.left, obs.right, obs.leftSide, obs.rightSide };
+        float[] s = FilterSensors(raw);
+        float F = s[0], L = s[1], R = s[2], LS = s[3], RS = s[4];
+
+        float gd = obs.goalDistance;
+        float ga = obs.goalAngleDeg;
+        if (float.IsNaN(gd)) gd = 10f;
+        if (float.IsNaN(ga)) ga = 0f;
+
+        float speed = 0f, turn = 0f;
+
+        // ---------- mode logic ----------
+        if (mode == Mode.GoToGoal)
+        {
+            bool goalAheadish = Mathf.Abs(ga) < 75f;
+            float freeToGoal = FreeToward(ga, F, L, R, LS, RS);
+            bool blocked =
+                goalAheadish &&
+                (F < FRONT_BLOCK ||
+                 (ga > 15f && L < 0.28f) ||
+                 (ga < -15f && R < 0.28f) ||
+                 (Mathf.Abs(ga) < 60f && freeToGoal < 0.30f && freeToGoal < gd));
+
+            if (blocked && (leaveCooldown <= 0f || F < 0.22f))
+            {
+                EnterFollow(ga, gd, L, R, LS, RS);
+            }
+            else
+            {
+                GoToGoalControl(ga, gd, F, L, R, LS, RS, out speed, out turn);
+            }
+        }
+
+        if (mode == Mode.FollowWall)
+        {
+            followTime += DT;
+            dMin = Mathf.Min(dMin, gd);
+
+            // ----- leave condition (DistBug) -----
+            bool left = false;
+            if (followTime > 1.0f)
+            {
+                float free = FreeToward(ga, F, L, R, LS, RS);
+                float margin = loopCount > 0 ? 0.04f : LEAVE_STEP;
+                bool goalVisible = free >= gd - 0.05f;
+                bool progress = (gd - Mathf.Min(free, gd)) <= dMin - margin;
+                bool notIntoWall = !GoalOnWallSideBlocked(ga, L, R, LS, RS);
+                if (Mathf.Abs(ga) < 100f && free > 0.45f && notIntoWall && (goalVisible || progress))
+                {
+                    mode = Mode.GoToGoal;
+                    leaveCooldown = 0.6f;
+                    timeSinceLeave = 0f;
+                    lastWallSide = wallSide;
+                    left = true;
+                    GoToGoalControl(ga, gd, F, L, R, LS, RS, out speed, out turn);
+                }
+            }
+
+            if (!left)
+            {
+                // ----- loop detection / timeout -> switch follow direction -----
+                float dx = px - hitX, dy = py - hitY;
+                bool returnedToHit = travelSinceHit > 1.2f && (dx * dx + dy * dy) < 0.2f * 0.2f;
+                bool timeout = followTime > 22f;
+                if (returnedToHit || timeout)
+                {
+                    wallSide = -wallSide;
+                    loopCount++;
+                    hitX = px; hitY = py;
+                    travelSinceHit = 0f;
+                    followTime = 0.5f;
+                    dMin = gd;
+                    hitDist = gd;
+                }
+                WallFollowControl(F, L, R, LS, RS, out speed, out turn);
+            }
+        }
+
+        // ---------- safety layer ----------
+        ApplySafety(F, L, R, LS, RS, ref speed, ref turn);
+
+        speed = Mathf.Clamp01(speed);
+        turn = Mathf.Clamp(turn, -1f, 1f);
+
+        // ---------- odometry ----------
+        float v = speed * VMAX;
+        heading += turn * WMAX_DEG * Mathf.Deg2Rad * DT;
+        px += v * Mathf.Cos(heading) * DT;
+        py += v * Mathf.Sin(heading) * DT;
+        if (mode == Mode.FollowWall) travelSinceHit += v * DT;
+
+        return (speed, turn);
+    }
+
+    // ======================================================================
+    // Sensor filtering: dropout (false 4.0) suppression + median of 3
+    private float[] FilterSensors(float[] raw)
+    {
+        float[] outv = new float[5];
+        for (int i = 0; i < 5; i++)
+        {
+            float r = raw[i];
+            if (float.IsNaN(r) || float.IsInfinity(r)) r = MAX_RANGE;
+            r = Mathf.Clamp(r, 0.02f, MAX_RANGE);
+
+            if (firstFrame)
+            {
+                for (int k = 0; k < 3; k++) hist[i, k] = r;
+                lastValid[i] = r;
+                dropCount[i] = 0;
+            }
+
+            float val = r;
+            if (r >= MAX_RANGE - 0.05f && lastValid[i] < 3.0f && dropCount[i] < 5)
+            {
+                // probable false "nothing detected": hold the last valid reading
+                val = lastValid[i];
+                dropCount[i]++;
+            }
+            else
+            {
+                lastValid[i] = r;
+                dropCount[i] = 0;
+            }
+            hist[i, histIdx] = val;
+        }
+        firstFrame = false;
+        histIdx = (histIdx + 1) % 3;
+
+        for (int i = 0; i < 5; i++)
+        {
+            float a = hist[i, 0], b = hist[i, 1], c = hist[i, 2];
+            float med = Mathf.Max(Mathf.Min(a, b), Mathf.Min(Mathf.Max(a, b), c));
+            // bias slightly toward the newest close reading for safety
+            float newest = hist[i, (histIdx + 2) % 3];
+            outv[i] = Mathf.Min(med, newest * 1.08f);
+        }
+        return outv;
+    }
+
+    // Free distance in the goal direction, estimated from the sensor cones
+    private float FreeToward(float ga, float F, float L, float R, float LS, float RS)
+    {
+        float a = Mathf.Abs(ga);
+        float diag = ga >= 0f ? L : R;
+        float side = ga >= 0f ? LS : RS;
+        if (a <= 12f) return F;
+        if (a <= 33f) return Mathf.Min(F, diag);
+        if (a <= 57f) return diag;
+        if (a <= 78f) return Mathf.Min(diag, side);
+        if (a <= 100f) return side;
+        return 0f;
+    }
+
+    // True if the goal lies on the side of the wall being followed and that side is close
+    private bool GoalOnWallSideBlocked(float ga, float L, float R, float LS, float RS)
+    {
+        bool goalOnWallSide = (wallSide > 0 && ga > 20f) || (wallSide < 0 && ga < -20f);
+        if (!goalOnWallSide) return false;
+        float d = wallSide > 0 ? L : R;
+        float sd = wallSide > 0 ? LS : RS;
+        return d < 0.5f || (Mathf.Abs(ga) > 60f && sd < 0.5f);
+    }
+
+    private void EnterFollow(float ga, float gd, float L, float R, float LS, float RS)
+    {
+        mode = Mode.FollowWall;
+        int turnDir; // +1 = turn left (wall ends up on right)
+
+        if (timeSinceLeave < 3f)
+        {
+            // re-hit shortly after leaving: keep the same direction to avoid ping-pong
+            turnDir = -lastWallSide;
+        }
+        else if (ga > 15f) turnDir = 1;
+        else if (ga < -15f) turnDir = -1;
+        else
+        {
+            float spaceL = L + 0.5f * LS;
+            float spaceR = R + 0.5f * RS;
+            turnDir = spaceL >= spaceR ? 1 : -1;
+        }
+
+        // If the chosen side is very cramped and the other is open, take the other
+        float chosenSpace = turnDir > 0 ? Mathf.Min(L, LS + 0.1f) : Mathf.Min(R, RS + 0.1f);
+        float otherSpace = turnDir > 0 ? Mathf.Min(R, RS + 0.1f) : Mathf.Min(L, LS + 0.1f);
+        if (chosenSpace < 0.2f && otherSpace > 0.6f && timeSinceLeave >= 3f) turnDir = -turnDir;
+
+        wallSide = -turnDir;
+        hitDist = gd;
+        dMin = gd;
+        followTime = 0f;
+        hitX = px; hitY = py;
+        travelSinceHit = 0f;
+    }
+
+    // ======================================================================
+    private void GoToGoalControl(float ga, float gd, float F, float L, float R, float LS, float RS,
+                                 out float speed, out float turn)
+    {
+        float a = Mathf.Abs(ga);
+
+        if (a > 150f)
+        {
+            // goal behind: turn in place with a stable direction (hysteresis)
+            if (a < 170f) lastTurnSignBehind = Mathf.Sign(ga);
+            else
+            {
+                // prefer the more open side
+                float sideSign = (L + LS) >= (R + RS) ? 1f : -1f;
+                if (totalTime < 0.2f) lastTurnSignBehind = sideSign;
+            }
+            turn = lastTurnSignBehind;
+            speed = 0f;
+            return;
+        }
+
+        float desired = Mathf.Clamp(ga / 40f, -1f, 1f);
+
+        // repulsion from nearby obstacles (positive = turn left)
+        float rep = 0f;
+        rep += 1.2f * (Close(R, 0.45f) - Close(L, 0.45f));
+        rep += 0.8f * (Close(RS, 0.20f) - Close(LS, 0.20f));
+        if (F < 0.6f)
+        {
+            // obstacle ahead but not blocking (goal is sideways): bias toward the open side
+            float open = (L + LS) >= (R + RS) ? 1f : -1f;
+            rep += 0.4f * Close(F, 0.6f) * open;
+        }
+
+        // centering in a narrow corridor
+        if (LS < 0.35f && RS < 0.35f) rep += 2.0f * (LS - RS);
+
+        turn = Mathf.Clamp(desired + rep, -1f, 1f);
+
+        speed = Mathf.Clamp01(1f - a / 90f);
+        speed = Mathf.Max(speed, a < 90f ? 0.15f : 0f);
+        speed *= 1f - 0.5f * Mathf.Abs(turn) * (a > 45f ? 1f : 0.4f);
+
+        // slow down near the goal
+        if (gd < 0.4f) speed = Mathf.Min(speed, 0.35f + gd);
+        if (a > 70f) speed = Mathf.Min(speed, 0.1f);
+    }
+
+    // ======================================================================
+    private void WallFollowControl(float F, float L, float R, float LS, float RS,
+                                   out float speed, out float turn)
+    {
+        float s = wallSide > 0 ? LS : RS;   // side sensor facing the wall
+        float d = wallSide > 0 ? L : R;     // diagonal sensor facing the wall
+        float os = wallSide > 0 ? RS : LS;  // opposite side
+        float od = wallSide > 0 ? R : L;    // opposite diagonal
+        float away = -wallSide;             // turn sign that moves away from the wall
+
+        float turnAway;
+
+        if (F < INNER_CORNER || d < 0.22f)
+        {
+            // inner corner / wall ahead: rotate away in place
+            turnAway = 0.9f;
+            speed = 0f;
+            if (F > 0.45f && d > 0.18f) speed = 0.1f;
+        }
+        else if (s > 0.55f && d > 0.75f)
+        {
+            // lost the wall (outer corner): arc around it toward the wall side
+            turnAway = -0.6f;
+            speed = 0.55f;
+            if (F < 0.5f) { speed = 0.2f; }
+        }
+        else
+        {
+            float sC = Mathf.Min(s, 1.0f);
+            float dC = Mathf.Min(d, 1.4f);
+            float err = WALL_DIST - sC;                          // >0: too close -> turn away
+            float angle = sC - (0.707f * dC - 0.075f);           // >0: heading toward wall
+            angle = Mathf.Clamp(angle, -0.3f, 0.3f);
+            turnAway = 3.0f * err + 1.8f * angle;
+            turnAway = Mathf.Clamp(turnAway, -0.7f, 0.9f);
+            speed = 0.85f - 0.45f * Mathf.Abs(turnAway);
+
+            if (F < 0.6f)
+            {
+                float k = Mathf.Clamp01((0.6f - F) / (0.6f - INNER_CORNER));
+                turnAway += 0.6f * k;
+                speed *= 1f - 0.7f * k;
+            }
+        }
+
+        // keep clear of the opposite side (narrow corridors)
+        if (os < 0.15f) turnAway -= (0.15f - os) * 6f;
+        if (od < 0.25f) turnAway -= (0.25f - od) * 4f;
+        if (s < 0.35f && os < 0.35f)
+        {
+            // corridor: center between the walls instead of holding WALL_DIST
+            float center = (s - os);   // >0: more room on wall side -> turn toward wall
+            turnAway = Mathf.Lerp(turnAway, -2.0f * center, 0.6f);
+            speed = Mathf.Min(speed, 0.6f);
+        }
+
+        turnAway = Mathf.Clamp(turnAway, -1f, 1f);
+        turn = away * turnAway;
+    }
+
+    // ======================================================================
+    private void ApplySafety(float F, float L, float R, float LS, float RS, ref float speed, ref float turn)
+    {
+        // forward speed limited by clearance ahead
+        float vlim = Mathf.Clamp01((F - 0.10f) / 0.35f);
+        vlim = Mathf.Min(vlim, Mathf.Clamp01((L - 0.08f) / 0.30f));
+        vlim = Mathf.Min(vlim, Mathf.Clamp01((R - 0.08f) / 0.30f));
+        speed = Mathf.Min(speed, vlim);
+
+        // emergency: something very close in front
+        if (F < 0.10f || L < 0.09f || R < 0.09f)
+        {
+            speed = 0f;
+            if (Mathf.Abs(turn) < 0.5f)
+            {
+                float openSign = (L + 0.5f * LS) >= (R + 0.5f * RS) ? 1f : -1f;
+                if (mode == Mode.FollowWall) openSign = -wallSide;
+                turn = openSign * 0.8f;
+            }
+        }
+
+        // diagonal very close: don't turn into it
+        if (L < 0.15f && turn > 0f) turn = Mathf.Min(turn, 0.1f) - 0.4f;
+        if (R < 0.15f && turn < 0f) turn = Mathf.Max(turn, -0.1f) + 0.4f;
+
+        // rotating in place with a side almost touching: the rear corner swings outward.
+        // Reduce turn rate and, if possible, creep forward to gain room.
+        if (speed < 0.05f && Mathf.Abs(turn) > 0.3f)
+        {
+            bool rearRisk = (turn > 0f && RS < 0.05f) || (turn < 0f && LS < 0.05f);
+            if (rearRisk)
+            {
+                turn *= 0.4f;
+                if (F > 0.25f && L > 0.2f && R > 0.2f) speed = 0.15f;
+            }
+        }
+
+        // side contact protection while moving forward
+        if (LS < 0.04f) turn = Mathf.Min(turn, -0.3f);
+        if (RS < 0.04f) turn = Mathf.Max(turn, 0.3f);
+    }
+
+    private static float Close(float dist, float threshold)
+    {
+        return Mathf.Clamp01((threshold - dist) / threshold);
+    }
+}
