@@ -420,3 +420,7 @@ Checklist of project phases. Update at the end of each phase.
 ### ChatGPT attempt 6 - feedback round 1
 - Round 1 compiles (class renamed only); Name "Adaptive Rover Navigation V2". Quick Test 3/10 (0 collisions, 7 timeouts, oscillating). OS was 3/10. Current FB result (last-round rule) 3/10.
   1 of 3 rounds used. File `LLM_History/LLM_ChatGPT_6_FB_r1.cs`. (Message had only the code; taken as round 1.)
+
+### ChatGPT attempt 6 - feedback round 2
+- Round 2 compiles (class renamed only); Name "Bug Navigation Rover V3". Quick Test 3/10 (0 collisions, 7 timeouts, dead end). Scores: OS 3, r1 3, r2 3.
+  Current FB result (last-round rule) 3/10. File `LLM_History/LLM_ChatGPT_6_FB_r2.cs`. 2 of 3 rounds used. (Message had only the code; taken as round 2.)
