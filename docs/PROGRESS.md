@@ -451,3 +451,6 @@ Checklist of project phases. Update at the end of each phase.
 
 ### Gemini attempt 4 - finished
 Finish line received: 3 feedback rounds, model "Gemini, Auto mode, Temporary Chat, free plan", human minutes 7. Final FB result 4/10 (last round). Log row completed.
+
+### Claude attempt 4 - one-shot
+Incognito chat. Class and constructor renamed to LLM_Claude_4_OS, nothing else. Compiles. Name = "LLM_Controller (DistBug wall follower)". Quick Test 10/10 (0 restarts) -> stopped early, 0 feedback rounds; LLM_Claude_4_FB.cs = exact copy (FB = OS). Model and minutes still to be filled.
