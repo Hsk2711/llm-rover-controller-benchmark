@@ -358,3 +358,7 @@ Checklist of project phases. Update at the end of each phase.
 - tools/run_quicktest.py now enters Play mode with `editor.playmode start`, waits until the frame counter runs, then starts the Quick Test inside Play mode. The simulation and the
   Quick Test code are untouched. Checks: LLM_ChatGPT_2_OS gives the same 9/10 and its per-run file is byte-identical (git diff clean); ChatGPT_4_FB gives the same result hand-started
   and via the driver (identical file). Not proven as the root cause; Phase 7 review still open.
+
+### Gemini attempt 3 - one-shot (OS)
+- LLM_Gemini_3_OS.cs saved (class renamed only), compiles. Name property "LLM_Controller" (untouched). Quick Test 7/10 (0 collisions, 3 timeouts, oscillating) via run_quicktest.py (0 restarts).
+  Attempt open (0 of 3 rounds used). model_version, human_minutes still to fill.
