@@ -1,0 +1,14 @@
+Test report: 2/10 reached the goal, 8 collisions, 0 timeouts (got stuck), 0 runtime errors. Most common failure: hits obstacles while turning.
+
+controller: LLM_ChatGPT_3_FB   (practice map seeds 2000-2009, noise 0.05, trial seeds 1-10)
+map_seed trial_seed outcome time_s exceptions failure_label
+2000 1 Collision 7.9 0 hits obstacles head-on
+2001 2 Goal 22.9 0 none
+2002 3 Collision 11.8 0 hits obstacles head-on
+2003 4 Collision 17.6 0 hits obstacles while turning
+2004 5 Collision 20.7 0 hits obstacles while turning
+2005 6 Goal 20.8 0 none
+2006 7 Collision 17.7 0 hits obstacles while turning
+2007 8 Collision 8.5 0 hits obstacles while turning
+2008 9 Collision 14.5 0 hits obstacles while turning
+2009 10 Collision 9.5 0 hits obstacles head-on

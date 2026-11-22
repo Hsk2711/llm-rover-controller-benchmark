@@ -299,3 +299,7 @@ Checklist of project phases. Update at the end of each phase.
 ### ChatGPT attempt 3 - one-shot (OS)
 - LLM_ChatGPT_3_OS.cs (class renamed only) does NOT compile: CS0019 at (251,13), `obs == null` on the struct Observation. Quarantined to LLM_NoCompile/ (copy in LLM_History/).
   Name property: "Adaptive Goal Navigation". Attempt open, 0 of 3 rounds used (a compile-error round counts).
+
+### ChatGPT attempt 3 - feedback round 1
+- Round 1 (compile error returned) compiles, class renamed only; Quick Test 2/10 (8 collisions, hits obstacles while turning). OS = no_compile. Current FB result (last-round rule) 2/10.
+  1 of 3 rounds used. File `LLM_History/LLM_ChatGPT_3_FB_r1.cs`.
