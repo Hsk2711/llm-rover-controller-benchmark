@@ -327,3 +327,9 @@ Checklist of project phases. Update at the end of each phase.
 ### Gemini attempt 2 - feedback round 3 (final)
 - Round 3 compiles (class renamed only); Name "LLM_Controller". Quick Test 6/10 (0 collisions, 4 timeouts, oscillating). FINAL FB result = 6/10 (last-round rule; the one-shot was 8/10).
   Scores: OS 8, r1 8, r2 3, r3 6. All files in `LLM_History/`. Attempt closed (3 of 3 rounds used). model_version, human_minutes still to fill.
+
+### Claude attempt 2 - one-shot (OS), closed at 10/10
+- LLM_Claude_2_OS.cs saved (class and constructor renamed; constructor needs the class name), compiles. Name "LLM_Controller_DistBug" (untouched). Quick Test 10/10 (1 restart).
+  FB = OS: LLM_Claude_2_FB.cs created by tools/ensure_fb_files.py (same two identifier renames), compiles, Quick Test 10/10 (4 restarts).
+- Stall note for Phase 7: the Play-mode stalls cluster right after a NEW script was added and compiled (this attempt: 1 and 4 restarts; earlier ones in the same situation).
+  Single-controller reruns without a new script did not stall. See results/quicktest_restarts.csv.
