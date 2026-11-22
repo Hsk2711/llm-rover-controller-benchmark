@@ -457,3 +457,6 @@ Incognito chat. Class and constructor renamed to LLM_Claude_4_OS, nothing else. 
 
 ### Claude attempt 4 - finished
 Finish line: 0 feedback rounds, model Claude Opus 5.5 (incognito chat), human minutes 4. Final FB = OS = 10/10. Log row completed.
+
+### Gemini attempt 5 - one-shot
+Temporary chat. Class and constructor renamed to LLM_Gemini_5_OS, nothing else. Compiles. Name = "LLM_ReactiveWallGoalController". Quick Test 9/10 (0 restarts; 1 timeout, oscillating). Attempt open for feedback rounds.
