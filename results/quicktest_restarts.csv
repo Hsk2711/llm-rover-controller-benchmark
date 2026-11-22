@@ -4,3 +4,4 @@ date,controller,restarts,seconds,outcome,report
 2026-11-20 21:59:12,LLM_Claude_1_FB,0,70,ok,"Test report: 10/10 reached the goal, 0 collisions, 0 timeouts (got stuck), 0 runtime errors. Most common failure: none."
 2026-11-22 12:02:23,RuleBasedController,1,158,ok,"Test report: 10/10 reached the goal, 0 collisions, 0 timeouts (got stuck), 0 runtime errors. Most common failure: none."
 2026-11-22 12:13:53,LLM_ChatGPT_3_FB,0,38,ok,"Test report: 2/10 reached the goal, 8 collisions, 0 timeouts (got stuck), 0 runtime errors. Most common failure: hits obstacles while turning."
+2026-11-22 12:18:22,LLM_ChatGPT_3_FB,0,64,ok,"Test report: 1/10 reached the goal, 0 collisions, 9 timeouts (got stuck), 0 runtime errors. Most common failure: gets stuck oscillating."

@@ -303,3 +303,7 @@ Checklist of project phases. Update at the end of each phase.
 ### ChatGPT attempt 3 - feedback round 1
 - Round 1 (compile error returned) compiles, class renamed only; Quick Test 2/10 (8 collisions, hits obstacles while turning). OS = no_compile. Current FB result (last-round rule) 2/10.
   1 of 3 rounds used. File `LLM_History/LLM_ChatGPT_3_FB_r1.cs`.
+
+### ChatGPT attempt 3 - feedback round 2
+- Round 2 compiles (class renamed only); Name "Adaptive Safe Navigation V2". Quick Test 1/10 (0 collisions, 9 timeouts, oscillating). Rounds: OS no_compile, r1 2/10, r2 1/10.
+  Current FB result (last-round rule) 1/10. File `LLM_History/LLM_ChatGPT_3_FB_r2.cs`. 2 of 3 rounds used.
