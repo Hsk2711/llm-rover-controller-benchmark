@@ -1,0 +1,4 @@
+<linker>
+  <!-- the experiment finds every controller class by reflection (ControllerRegistry): never strip them from the player -->
+  <assembly fullname="Assembly-CSharp" preserve="all"/>
+</linker>

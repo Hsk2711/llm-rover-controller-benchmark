@@ -21,6 +21,10 @@ public class ControllerHost : MonoBehaviour
     public int ExceptionCount => safe != null ? safe.ExceptionCount : 0;
     public SafeController Safe => safe;
 
+    /// <summary>null (default) = the goal is the object tagged Goal anywhere in the scene. The experiment runner sets this to the
+    /// root of ONE arena, so the controller of that arena only sees its own goal.</summary>
+    public Transform arenaRoot;
+
     RoverDrive drive;
     SensorRig rig;
     RoverStatus status;
@@ -124,6 +128,11 @@ public class ControllerHost : MonoBehaviour
     public bool TryBuildObservation(out Observation obs)
     {
         obs = default;
+        if (goal == null && arenaRoot != null)
+        {
+            foreach (var t in arenaRoot.GetComponentsInChildren<Transform>())
+                if (t.CompareTag("Goal")) { goal = t; break; }
+        }
         if (goal == null)
         {
             var g = GameObject.FindGameObjectWithTag("Goal");

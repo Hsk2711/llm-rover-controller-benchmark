@@ -14,6 +14,10 @@ public class RoverStatus : MonoBehaviour
     public float MinObstacleDistance { get; private set; } = float.PositiveInfinity; // metres, surface to surface
     public bool Finished => Collided || ReachedGoal;
 
+    /// <summary>null (default) = look for the Goal and all Wall/Obstacle colliders in the whole scene. The experiment runner sets
+    /// this to the root of ONE arena, so a rover only sees the walls, obstacles and goal of its own arena (8 arenas run side by side).</summary>
+    public Transform arenaRoot;
+
     /// <summary>Raised whenever a new run starts (ResetStatus). Viewing aids use it to clear themselves.</summary>
     public event System.Action RunReset;
 
@@ -39,6 +43,17 @@ public class RoverStatus : MonoBehaviour
     public void RefreshTargets()
     {
         obstacles.Clear();
+        if (arenaRoot != null)
+        {
+            goal = null;
+            foreach (var c in arenaRoot.GetComponentsInChildren<Collider>())
+            {
+                if (c.CompareTag("Wall") || c.CompareTag("Obstacle")) obstacles.Add(c);
+                else if (goal == null && c.CompareTag("Goal")) goal = c;
+            }
+            if (goal == null) Debug.LogWarning("RoverStatus: no object tagged Goal with a collider found in the arena", this);
+            return;
+        }
         foreach (string tag in new[] { "Wall", "Obstacle" })
             foreach (var go in GameObject.FindGameObjectsWithTag(tag))
                 obstacles.AddRange(go.GetComponentsInChildren<Collider>());

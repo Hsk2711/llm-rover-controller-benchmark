@@ -57,6 +57,7 @@ algorithm on the same simulated rover. Results must be real, reproducible and fa
   Their controllers stay in the study: the experiment runner must report them as success=0, outcome "no_compile" in every trial
   (ControllerRegistry.ExperimentEntries()). Never fix them, never drop them.
 - PHASE 6 FREEZE: After tag phase6-frozen, no file in Assets/Scripts/Controllers/LLM/, LLM_NoCompile/ or LLM_History/ may be edited, moved or renamed.
+- EXPERIMENT RUNNER: never change the arena offset (70 m, ExperimentRunner) or the way sensor seeds are made for the real runs: the physics is float arithmetic and the results depend on the arena position (see docs/PROGRESS.md, Phase 7 step 1). The player in Build/ must be rebuilt after any code change.
 - All fixed numbers live in a ScriptableObject called SimConfig, never hard-coded.
 - Build one step at a time. After each step, explain what you did in simple words;
   the user is a mechanical engineer, new to robotics software.

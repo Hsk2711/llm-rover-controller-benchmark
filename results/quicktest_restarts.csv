@@ -47,3 +47,7 @@ date,controller,restarts,seconds,outcome,report
 2026-11-22 19:20:41,LLM_Gemini_5_FB,0,79,ok,"Test report: 6/10 reached the goal, 0 collisions, 4 timeouts (got stuck), 0 runtime errors. Most common failure: gets stuck oscillating."
 2026-11-22 19:24:05,LLM_Gemini_5_FB,0,67,ok,"Test report: 6/10 reached the goal, 0 collisions, 4 timeouts (got stuck), 0 runtime errors. Most common failure: gets stuck oscillating."
 2026-11-22 19:28:20,LLM_Claude_5_OS,0,65,ok,"Test report: 10/10 reached the goal, 0 collisions, 0 timeouts (got stuck), 0 runtime errors. Most common failure: none."
+2026-11-22 23:00:28,RuleBasedController,0,51,ok,"Test report: 10/10 reached the goal, 0 collisions, 0 timeouts (got stuck), 0 runtime errors. Most common failure: none."
+2026-11-22 23:01:22,Bug2Controller,0,53,ok,"Test report: 5/10 reached the goal, 5 collisions, 0 timeouts (got stuck), 0 runtime errors. Most common failure: hits obstacles head-on."
+2026-11-22 23:02:27,LLM_Gemini_4_FB,0,65,ok,"Test report: 4/10 reached the goal, 0 collisions, 6 timeouts (got stuck), 0 runtime errors. Most common failure: gets stuck in a dead end."
+2026-11-22 23:03:18,LLM_Claude_3_FB,0,51,ok,"Test report: 10/10 reached the goal, 0 collisions, 0 timeouts (got stuck), 0 runtime errors. Most common failure: none."

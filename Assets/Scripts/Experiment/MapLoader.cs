@@ -15,6 +15,10 @@ public class MapLoader : MonoBehaviour
 
     public const string RootName = "Obstacles";
 
+    /// <summary>null (default) = tell every RoverStatus in the scene that the map changed. The experiment runner (several arenas, each
+    /// with its own MapLoader placed at the arena's offset) sets this to the one rover of its arena.</summary>
+    public RoverStatus onlyStatus;
+
     void Start()
     {
         if (loadOnStart && map != null) Load(map);
@@ -31,8 +35,8 @@ public class MapLoader : MonoBehaviour
 
         Transform root = new GameObject(RootName).transform;
         root.SetParent(transform, false);
-        root.position = Vector3.zero;
-        root.rotation = Quaternion.identity;
+        root.localPosition = Vector3.zero;       // the loader may sit at an arena offset (experiment runner); at the origin this is the same as before
+        root.localRotation = Quaternion.identity;
 
         float h = config.obstacleHeight;
         for (int i = 0; i < definition.obstacles.Count; i++)
@@ -43,9 +47,9 @@ public class MapLoader : MonoBehaviour
             box.tag = "Obstacle";
             box.transform.SetParent(root, false);
             box.transform.localScale = new Vector3(b.size.x, h, b.size.y);
-            box.transform.position = new Vector3(b.position.x, h * 0.5f, b.position.y);
+            box.transform.localPosition = new Vector3(b.position.x, h * 0.5f, b.position.y);
             // Unity's +Y rotation turns RIGHT, and the map's positive angle is LEFT (counter-clockwise from above)
-            box.transform.rotation = Quaternion.Euler(0f, -b.rotationDeg, 0f);
+            box.transform.localRotation = Quaternion.Euler(0f, -b.rotationDeg, 0f);
             box.GetComponent<Renderer>().sharedMaterial = GetMaterial();
         }
 
@@ -56,7 +60,8 @@ public class MapLoader : MonoBehaviour
         {
             Physics.SyncTransforms();
             // the rover's status keeps lists of obstacle and goal colliders: tell it the map changed
-            foreach (var status in FindObjectsByType<RoverStatus>(FindObjectsSortMode.None)) status.RefreshTargets();
+            if (onlyStatus != null) onlyStatus.RefreshTargets();
+            else foreach (var status in FindObjectsByType<RoverStatus>(FindObjectsSortMode.None)) status.RefreshTargets();
         }
     }
 
@@ -89,7 +94,7 @@ public class MapLoader : MonoBehaviour
         Resolve(ref zone, zoneName);
         if (zone == null) { Debug.LogWarning("MapLoader: no object named " + zoneName + " found", this); return; }
         Vector3 p = zone.position;
-        zone.position = new Vector3(centre.x, p.y, centre.y);
+        zone.position = new Vector3(transform.position.x + centre.x, p.y, transform.position.z + centre.y);   // loader at the origin: (centre.x, y, centre.y)
         Vector3 s = zone.localScale;
         zone.localScale = new Vector3(config.zoneSize, s.y, config.zoneSize);
     }
