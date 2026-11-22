@@ -378,3 +378,7 @@ Checklist of project phases. Update at the end of each phase.
 ### Claude attempt 3 - one-shot (OS)
 - LLM_Claude_3_OS.cs saved (class and constructor renamed), compiles. Name property "LLM_Controller" (untouched). Quick Test 8/10 (2 collisions, 0 timeouts, head-on) via run_quicktest.py (0 restarts).
   Attempt open (0 of 3 rounds used). model_version, human_minutes still to fill.
+
+### Claude attempt 3 - feedback round 1, closed at 10/10
+- Round 1 compiles (class and constructor renamed); Name "LLM_Controller". Quick Test 10/10 (0 collisions, 0 timeouts). Stop early at 10/10: FINAL FB result = 10/10, 1 feedback round used. OS was 8/10.
+  File `LLM_History/LLM_Claude_3_FB_r1.cs`. model_version, human_minutes still to fill.
