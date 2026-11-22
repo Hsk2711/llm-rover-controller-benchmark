@@ -1,0 +1,14 @@
+Test report: 8/10 reached the goal, 0 collisions, 2 timeouts (got stuck), 0 runtime errors. Most common failure: gets stuck oscillating.
+
+controller: LLM_Gemini_2_FB   (practice map seeds 2000-2009, noise 0.05, trial seeds 1-10)
+map_seed trial_seed outcome time_s exceptions failure_label
+2000 1 Goal 33.2 0 none
+2001 2 Goal 23.1 0 none
+2002 3 Timeout 60.0 0 gets stuck oscillating
+2003 4 Timeout 60.0 0 gets stuck in a dead end
+2004 5 Goal 38.1 0 none
+2005 6 Goal 21.1 0 none
+2006 7 Goal 42.1 0 none
+2007 8 Goal 37.0 0 none
+2008 9 Goal 21.9 0 none
+2009 10 Goal 45.0 0 none
