@@ -416,3 +416,7 @@ Checklist of project phases. Update at the end of each phase.
 ### ChatGPT attempt 6 - one-shot (OS) (replacement for excluded attempt 5)
 - LLM_ChatGPT_6_OS.cs saved (class renamed only), compiles. Name property "Adaptive Rover Navigation". Quick Test 3/10 (0 collisions, 7 timeouts, oscillating) via run_quicktest.py (0 restarts).
   Attempt open (0 of 3 rounds used). model_version, human_minutes still to fill.
+
+### ChatGPT attempt 6 - feedback round 1
+- Round 1 compiles (class renamed only); Name "Adaptive Rover Navigation V2". Quick Test 3/10 (0 collisions, 7 timeouts, oscillating). OS was 3/10. Current FB result (last-round rule) 3/10.
+  1 of 3 rounds used. File `LLM_History/LLM_ChatGPT_6_FB_r1.cs`. (Message had only the code; taken as round 1.)
