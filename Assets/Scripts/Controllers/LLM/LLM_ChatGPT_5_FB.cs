@@ -4,456 +4,555 @@ using UnityEngine;
 
 public class LLM_ChatGPT_5_FB : IRoverController
 {
-    public string Name => "Rover Navigation V3";
+    public string Name => "Rover V6 Adaptive Navigation";
 
-    private enum State
+    private enum NavigationMode
     {
-        Seek,
-        TurnAroundObstacle,
-        FollowWall,
-        EscapeTurn
+        GoalSeeking,
+        ObstacleAvoidance,
+        Recovery
     }
 
-    private State state;
+    private NavigationMode mode;
 
     private const float DT = 0.05f;
+    private const float MAX_SENSOR = 4f;
 
-    private const float SAFE_FRONT = 0.58f;
-    private const float SAFE_DIAGONAL = 0.40f;
-    private const float CRITICAL = 0.25f;
-    private const float WALL_TARGET = 0.42f;
+    private const float FRONT_DANGER = 0.65f;
+    private const float DIAGONAL_DANGER = 0.42f;
+    private const float CRITICAL_DISTANCE = 0.24f;
 
-    private float front, left, right;
-    private float leftSide, rightSide;
+    private const float DESIRED_WALL_DISTANCE = 0.40f;
+
+    private float front;
+    private float left;
+    private float right;
+    private float leftSide;
+    private float rightSide;
 
     private bool initialized;
 
-    private int direction;
-    private int turnDirection;
-
-    private float stateTimer;
-    private float clearTimer;
-    private float stuckTimer;
-    private float escapeTimer;
-
-    private float bestDistance;
-    private float previousDistance;
-
-    private float previousTurn;
     private float filteredGoalAngle;
 
-    private int frontClear;
-    private int leftClear;
-    private int rightClear;
-    private int leftSideClear;
-    private int rightSideClear;
+    // Navigation direction:
+    // +1 = pass obstacle on its left side.
+    // -1 = pass obstacle on its right side.
+    private int avoidanceDirection;
 
-    private int recoveryAttempts;
+    private int escapeDirection;
+
+    // Steering memory
+    private float previousTurn;
+    private int steeringDirection;
+    private int pendingDirection;
+    private float reversalTimer;
+
+    // Timers
+    private float modeTimer;
+    private float clearTimer;
+    private float stuckTimer;
+    private float recoveryTimer;
+
+    // Progress tracking
+    private float bestGoalDistance;
+    private float progressReference;
+
+    private int recoveryCount;
+
+    // Sensor filtering counters
+    private int fc, lc, rc, lsc, rsc;
 
     public void ResetController()
     {
-        state = State.Seek;
+        mode = NavigationMode.GoalSeeking;
 
         front = left = right = 4f;
         leftSide = rightSide = 4f;
 
         initialized = false;
 
-        direction = 1;
-        turnDirection = 1;
-
-        stateTimer = 0f;
-        clearTimer = 0f;
-        stuckTimer = 0f;
-        escapeTimer = 0f;
-
-        bestDistance = 999f;
-        previousDistance = 999f;
-
-        previousTurn = 0f;
         filteredGoalAngle = 0f;
 
-        frontClear = 0;
-        leftClear = 0;
-        rightClear = 0;
-        leftSideClear = 0;
-        rightSideClear = 0;
+        avoidanceDirection = 1;
+        escapeDirection = 1;
 
-        recoveryAttempts = 0;
+        previousTurn = 0f;
+        steeringDirection = 0;
+        pendingDirection = 0;
+        reversalTimer = 0f;
+
+        modeTimer = 0f;
+        clearTimer = 0f;
+        stuckTimer = 0f;
+        recoveryTimer = 0f;
+
+        bestGoalDistance = 999f;
+        progressReference = 999f;
+
+        recoveryCount = 0;
+
+        fc = lc = rc = lsc = rsc = 0;
     }
 
-    private float Clean(float v)
+    private float Clean(float value)
     {
-        if (float.IsNaN(v) || float.IsInfinity(v))
-            return 4f;
+        if (float.IsNaN(value) || float.IsInfinity(value))
+            return MAX_SENSOR;
 
-        return Mathf.Clamp(v, 0.02f, 4f);
+        return Mathf.Clamp(value, 0.02f, MAX_SENSOR);
     }
 
+    // Fast response to closer obstacles.
+    // Slower response when obstacles disappear.
+    // Reject isolated false maximum readings.
     private float Filter(
-        float oldValue,
-        float newValue,
+        float previous,
+        float current,
         ref int clearCount)
     {
-        newValue = Clean(newValue);
+        current = Clean(current);
 
-        // Reject isolated false maximum readings.
-        if (newValue >= 3.95f && oldValue < 2.5f)
+        if (current >= 3.95f && previous < 2.5f)
         {
             clearCount++;
 
             if (clearCount < 3)
-                return oldValue;
+                return previous;
         }
         else
         {
             clearCount = 0;
         }
 
-        return Mathf.Lerp(oldValue, newValue, 0.35f);
+        float alpha = current < previous ? 0.65f : 0.25f;
+
+        return Mathf.Lerp(previous, current, alpha);
     }
 
-    private void UpdateSensors(Observation o)
+    private void UpdateSensors(Observation obs)
     {
         if (!initialized)
         {
-            front = Clean(o.front);
-            left = Clean(o.left);
-            right = Clean(o.right);
-            leftSide = Clean(o.leftSide);
-            rightSide = Clean(o.rightSide);
+            front = Clean(obs.front);
+            left = Clean(obs.left);
+            right = Clean(obs.right);
 
-            filteredGoalAngle = o.goalAngleDeg;
+            leftSide = Clean(obs.leftSide);
+            rightSide = Clean(obs.rightSide);
+
+            filteredGoalAngle = obs.goalAngleDeg;
 
             initialized = true;
             return;
         }
 
-        front = Filter(front, o.front, ref frontClear);
-        left = Filter(left, o.left, ref leftClear);
-        right = Filter(right, o.right, ref rightClear);
+        front = Filter(front, obs.front, ref fc);
+        left = Filter(left, obs.left, ref lc);
+        right = Filter(right, obs.right, ref rc);
 
-        leftSide = Filter(
-            leftSide, o.leftSide, ref leftSideClear);
-
-        rightSide = Filter(
-            rightSide, o.rightSide, ref rightSideClear);
+        leftSide = Filter(leftSide, obs.leftSide, ref lsc);
+        rightSide = Filter(rightSide, obs.rightSide, ref rsc);
 
         filteredGoalAngle = Mathf.LerpAngle(
             filteredGoalAngle,
-            o.goalAngleDeg,
+            obs.goalAngleDeg,
             0.35f
         );
     }
 
-    private float Danger(float d)
+    private float ClampTurn(float value)
     {
-        return Mathf.Clamp01((0.65f - d) / 0.48f);
+        return Mathf.Clamp(value, -1f, 1f);
     }
 
-    private float ClampTurn(float t)
+    private float Danger(float distance)
     {
-        return Mathf.Clamp(t, -1f, 1f);
+        return Mathf.Clamp01(
+            (0.75f - distance) / 0.55f
+        );
     }
 
-    // Choose a side only when starting a new obstacle encounter.
-    private int ChooseDirection()
+    private float GoalSteering(float angle)
     {
-        float leftSpace =
-            0.55f * left + 0.45f * leftSide;
+        // Small deadband reduces unnecessary corrections.
+        if (Mathf.Abs(angle) < 7f)
+            return 0f;
 
-        float rightSpace =
-            0.55f * right + 0.45f * rightSide;
+        return Mathf.Clamp(angle / 60f, -1f, 1f);
+    }
 
-        if (leftSpace > rightSpace + 0.10f)
+    // Choose the direction with greater available clearance.
+    private int ChooseAvoidanceDirection()
+    {
+        float leftClearance =
+            0.65f * left +
+            0.35f * leftSide;
+
+        float rightClearance =
+            0.65f * right +
+            0.35f * rightSide;
+
+        if (leftClearance > rightClearance + 0.12f)
             return 1;
 
-        if (rightSpace > leftSpace + 0.10f)
+        if (rightClearance > leftClearance + 0.12f)
             return -1;
 
-        return leftSpace >= rightSpace ? 1 : -1;
+        return leftClearance >= rightClearance ? 1 : -1;
     }
 
-    private void BeginAvoidance(int dir)
+    private void EnterAvoidance(int direction)
     {
-        direction = dir;
+        avoidanceDirection = direction;
 
-        // Turn away from the obstacle while establishing
-        // a consistent wall-following side.
-        turnDirection = -direction;
+        mode = NavigationMode.ObstacleAvoidance;
 
-        state = State.TurnAroundObstacle;
-
-        stateTimer = 0f;
+        modeTimer = 0f;
         clearTimer = 0f;
+        stuckTimer = 0f;
+
+        steeringDirection = 0;
+        pendingDirection = 0;
+        reversalTimer = 0f;
     }
 
-    private bool ObstacleAhead()
+    // Combined goal attraction and obstacle repulsion.
+    private float CalculateGoalSteering(float angle)
     {
-        return front < SAFE_FRONT ||
-               left < SAFE_DIAGONAL ||
-               right < SAFE_DIAGONAL;
-    }
+        float turn = GoalSteering(angle);
 
-    // Goal-seeking steering.
-    private float SeekSteering(float angle)
-    {
-        float turn = Mathf.Clamp(angle / 65f, -1f, 1f);
+        turn += 0.95f * Danger(left);
+        turn -= 0.95f * Danger(right);
 
-        turn += 0.80f * Danger(left);
-        turn -= 0.80f * Danger(right);
-
-        turn -= 0.45f * Danger(leftSide);
-        turn += 0.45f * Danger(rightSide);
+        turn -= 0.40f * Danger(leftSide);
+        turn += 0.40f * Danger(rightSide);
 
         return ClampTurn(turn);
     }
 
-    // Corrected wall-following controller.
-    private float FollowSteering()
+    // Avoidance with persistent passing direction.
+    private float CalculateAvoidanceSteering(float angle)
     {
-        float turn;
+        float goalTurn = GoalSteering(angle);
 
-        if (direction > 0)
+        float turn = goalTurn * 0.35f;
+
+        if (avoidanceDirection > 0)
         {
-            // Keep obstacle on left.
-            // Too far from wall -> turn left.
-            // Too close -> turn right.
+            // Prefer passing the obstacle on the left.
+            // Turn away from close frontal-left obstacles.
+            turn += 0.45f;
+            turn -= 0.95f * Danger(left);
+            turn -= 0.65f * Danger(front);
 
-            turn = 1.7f * (leftSide - WALL_TARGET);
-
-            // Front-left obstacle.
-            turn -= 0.65f * Danger(left);
-
-            // Obstacle directly ahead.
-            turn -= 1.15f * Danger(front);
-
-            // Maintain clearance on opposite side.
-            turn += 0.30f * Danger(rightSide);
+            // Maintain clearance from the left wall.
+            if (leftSide < 0.85f)
+            {
+                turn += Mathf.Clamp(
+                    (leftSide - DESIRED_WALL_DISTANCE) * 0.65f,
+                    -0.35f,
+                    0.35f
+                );
+            }
         }
         else
         {
-            // Keep obstacle on right.
-            // Too far from wall -> turn right.
-            // Too close -> turn left.
+            // Prefer passing the obstacle on the right.
+            turn -= 0.45f;
+            turn += 0.95f * Danger(right);
+            turn += 0.65f * Danger(front);
 
-            turn = -1.7f * (rightSide - WALL_TARGET);
-
-            turn += 0.65f * Danger(right);
-
-            turn += 1.15f * Danger(front);
-
-            turn -= 0.30f * Danger(leftSide);
+            if (rightSide < 0.85f)
+            {
+                turn -= Mathf.Clamp(
+                    (rightSide - DESIRED_WALL_DISTANCE) * 0.65f,
+                    -0.35f,
+                    0.35f
+                );
+            }
         }
+
+        // Additional clearance protection.
+        turn += 0.30f * Danger(leftSide);
+        turn -= 0.30f * Danger(rightSide);
 
         return ClampTurn(turn);
     }
 
-    // A goal-facing direction must remain clear before
-    // leaving obstacle-following mode.
-    private bool GoalDirectionClear(float angle)
+    // Prevent rapid left-right steering reversals.
+    private float StabilizeSteering(float desired)
     {
-        if (front < 0.85f)
+        int sign = desired > 0.06f ? 1 :
+                   desired < -0.06f ? -1 : 0;
+
+        if (sign == 0)
+        {
+            pendingDirection = 0;
+            reversalTimer = 0f;
+
+            return Mathf.Lerp(previousTurn, 0f, 0.35f);
+        }
+
+        if (steeringDirection == 0)
+            steeringDirection = sign;
+
+        if (sign != steeringDirection)
+        {
+            if (pendingDirection != sign)
+            {
+                pendingDirection = sign;
+                reversalTimer = 0f;
+            }
+
+            reversalTimer += DT;
+
+            // Allow emergency steering immediately.
+            if (Mathf.Abs(desired) > 0.90f)
+            {
+                steeringDirection = sign;
+                pendingDirection = 0;
+                reversalTimer = 0f;
+            }
+            else if (reversalTimer >= 0.25f)
+            {
+                steeringDirection = sign;
+                pendingDirection = 0;
+                reversalTimer = 0f;
+            }
+            else
+            {
+                desired = steeringDirection *
+                    Mathf.Min(Mathf.Abs(previousTurn), 0.35f);
+            }
+        }
+        else
+        {
+            pendingDirection = 0;
+            reversalTimer = 0f;
+        }
+
+        return Mathf.Lerp(previousTurn, desired, 0.45f);
+    }
+
+    // Check whether the goal direction is sufficiently clear.
+    private bool GoalPathIsClear(float angle)
+    {
+        if (front < 0.90f)
             return false;
 
         if (Mathf.Abs(angle) < 25f)
-            return front > 1.0f;
+            return true;
 
         if (angle > 0f)
-            return left > 0.85f;
+            return left > 0.75f;
 
-        return right > 0.85f;
+        return right > 0.75f;
     }
 
     private void UpdateProgress(float distance)
     {
-        if (distance < bestDistance - 0.08f)
+        if (distance < bestGoalDistance - 0.10f)
         {
-            bestDistance = distance;
+            bestGoalDistance = distance;
             stuckTimer = 0f;
-            recoveryAttempts = 0;
+            recoveryCount = 0;
         }
         else
         {
             stuckTimer += DT;
         }
 
-        previousDistance = distance;
+        if (distance < progressReference - 0.12f)
+        {
+            progressReference = distance;
+        }
     }
 
     private void StartRecovery()
     {
-        // Only switch direction after sustained lack of progress.
-        direction = -direction;
+        escapeDirection = -avoidanceDirection;
 
-        turnDirection = -direction;
+        if (mode == NavigationMode.GoalSeeking)
+            escapeDirection = -ChooseAvoidanceDirection();
 
-        state = State.EscapeTurn;
+        mode = NavigationMode.Recovery;
 
-        escapeTimer = 0f;
-        stateTimer = 0f;
+        recoveryTimer = 0f;
+        modeTimer = 0f;
         stuckTimer = 0f;
         clearTimer = 0f;
 
-        recoveryAttempts++;
+        recoveryCount++;
+
+        steeringDirection = escapeDirection;
+        pendingDirection = 0;
+        reversalTimer = 0f;
     }
 
     public (float speed01, float turn) Decide(Observation obs)
     {
         UpdateSensors(obs);
 
-        float distance = Mathf.Max(0f, obs.goalDistance);
-        float angle = Mathf.Clamp(filteredGoalAngle, -180f, 180f);
+        float goalDistance = Mathf.Max(0f, obs.goalDistance);
 
-        stateTimer += DT;
+        float goalAngle = Mathf.Clamp(
+            filteredGoalAngle,
+            -180f,
+            180f
+        );
 
-        UpdateProgress(distance);
+        modeTimer += DT;
+
+        UpdateProgress(goalDistance);
 
         // Goal reached.
-        if (distance < 0.17f)
+        if (goalDistance < 0.16f)
             return (0f, 0f);
 
-        // State 1: Seek the goal.
-        if (state == State.Seek)
+        // Use raw sensor readings for immediate safety.
+        float rawFront = Clean(obs.front);
+        float rawLeft = Clean(obs.left);
+        float rawRight = Clean(obs.right);
+
+        bool obstacleAhead =
+            front < FRONT_DANGER ||
+            left < DIAGONAL_DANGER ||
+            right < DIAGONAL_DANGER;
+
+        // GOAL SEEKING
+        if (mode == NavigationMode.GoalSeeking &&
+            obstacleAhead)
         {
-            if (ObstacleAhead())
-                BeginAvoidance(ChooseDirection());
+            EnterAvoidance(ChooseAvoidanceDirection());
         }
 
-        // State 2: Initial controlled turn.
-        if (state == State.TurnAroundObstacle)
+        // OBSTACLE AVOIDANCE
+        if (mode == NavigationMode.ObstacleAvoidance)
         {
-            if (stateTimer >= 0.85f)
-            {
-                state = State.FollowWall;
-                stateTimer = 0f;
-                clearTimer = 0f;
-            }
-        }
-
-        // State 3: Persistent wall following.
-        if (state == State.FollowWall)
-        {
-            if (GoalDirectionClear(angle))
+            if (GoalPathIsClear(goalAngle))
                 clearTimer += DT;
             else
                 clearTimer = 0f;
 
-            // Require sustained clearance.
-            if (clearTimer >= 0.8f &&
-                stateTimer >= 1.5f)
+            if (clearTimer >= 0.65f && modeTimer >= 1.0f)
             {
-                state = State.Seek;
+                mode = NavigationMode.GoalSeeking;
 
-                stateTimer = 0f;
+                modeTimer = 0f;
                 clearTimer = 0f;
                 stuckTimer = 0f;
 
-                bestDistance = distance;
+                steeringDirection = 0;
+                pendingDirection = 0;
+                reversalTimer = 0f;
+
+                bestGoalDistance = goalDistance;
             }
         }
 
-        // State 4: Recovery turn.
-        if (state == State.EscapeTurn)
+        // RECOVERY
+        if (mode == NavigationMode.Recovery)
         {
-            escapeTimer += DT;
+            recoveryTimer += DT;
 
-            if (escapeTimer >= 0.75f)
+            if (recoveryTimer >= 0.50f)
             {
-                state = State.FollowWall;
-
-                stateTimer = 0f;
-                clearTimer = 0f;
+                EnterAvoidance(escapeDirection);
             }
         }
 
-        // Recovery only after sustained lack of progress.
-        if (state != State.EscapeTurn &&
-            state != State.TurnAroundObstacle &&
-            stuckTimer >= 6f &&
-            recoveryAttempts < 3)
+        // Detect lack of meaningful progress.
+        if (mode != NavigationMode.Recovery &&
+            stuckTimer >= 5f &&
+            recoveryCount < 4)
         {
             StartRecovery();
         }
 
-        float turn = 0f;
-        float speed = 0.75f;
+        float desiredTurn;
+        float speed;
 
-        switch (state)
+        switch (mode)
         {
-            case State.Seek:
+            case NavigationMode.GoalSeeking:
 
-                turn = SeekSteering(angle);
+                desiredTurn = CalculateGoalSteering(goalAngle);
                 speed = 0.75f;
 
                 break;
 
-            case State.TurnAroundObstacle:
+            case NavigationMode.ObstacleAvoidance:
 
-                turn = turnDirection * 0.75f;
-                speed = 0f;
-
-                break;
-
-            case State.FollowWall:
-
-                turn = FollowSteering();
-                speed = 0.38f;
+                desiredTurn = CalculateAvoidanceSteering(goalAngle);
+                speed = 0.45f;
 
                 break;
 
-            case State.EscapeTurn:
+            default:
 
-                turn = turnDirection * 0.85f;
-                speed = 0f;
+                desiredTurn = escapeDirection * 0.85f;
+                speed = 0.10f;
 
                 break;
         }
 
-        // Emergency collision avoidance.
-        if (front < CRITICAL)
+        // Emergency response overrides steering hysteresis.
+        bool emergency =
+            rawFront < CRITICAL_DISTANCE ||
+            rawLeft < 0.15f ||
+            rawRight < 0.15f;
+
+        if (emergency)
         {
-            turn = left > right ? 1f : -1f;
-            speed = 0.08f;
-        }
+            if (rawFront < CRITICAL_DISTANCE)
+                desiredTurn = left > right ? 1f : -1f;
+            else if (rawLeft < 0.15f)
+                desiredTurn = -1f;
+            else
+                desiredTurn = 1f;
 
-        // Smooth ordinary steering, but do not smooth
-        // fixed-direction turning states.
-        if (state == State.Seek ||
-            state == State.FollowWall)
+            speed = 0f;
+
+            steeringDirection = desiredTurn > 0f ? 1 : -1;
+            pendingDirection = 0;
+            reversalTimer = 0f;
+        }
+        else
         {
-            turn = Mathf.Lerp(previousTurn, turn, 0.55f);
+            desiredTurn = StabilizeSteering(desiredTurn);
         }
 
-        previousTurn = ClampTurn(turn);
+        previousTurn = ClampTurn(desiredTurn);
 
-        // Slow down near obstacles.
+        // Adaptive speed based on minimum clearance.
         float nearest = Mathf.Min(
-            front, left, right, leftSide, rightSide
+            front,
+            left,
+            right,
+            leftSide,
+            rightSide
         );
 
-        if (nearest < 0.8f)
+        if (nearest < 0.90f)
         {
-            float clearanceSpeed = Mathf.Lerp(
-                0.12f,
-                0.55f,
-                Mathf.Clamp01((nearest - 0.20f) / 0.60f)
+            float safeSpeed = Mathf.Lerp(
+                0.10f,
+                0.65f,
+                Mathf.Clamp01((nearest - 0.20f) / 0.70f)
             );
 
-            speed = Mathf.Min(speed, clearanceSpeed);
+            speed = Mathf.Min(speed, safeSpeed);
         }
 
-        // Slow down on sharp turns.
-        if (speed > 0f)
-            speed *= 1f - 0.55f * Mathf.Abs(turn);
+        // Slow down for sharp turns.
+        speed *= 1f - 0.45f * Mathf.Abs(previousTurn);
 
-        // Never drive into an extremely close frontal obstacle.
-        if (front < 0.16f)
+        if (rawFront < 0.16f)
             speed = 0f;
 
         return (
             Mathf.Clamp(speed, 0f, 1f),
-            ClampTurn(turn)
+            ClampTurn(previousTurn)
         );
     }
 }
