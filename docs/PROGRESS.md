@@ -387,3 +387,7 @@ Checklist of project phases. Update at the end of each phase.
 - Original chats not saved for Claude attempt 2 and ChatGPT attempt 4. `docs/llm_transcripts/Claude_2_reconstructed.txt` and `ChatGPT_4_reconstructed.txt` hold the frozen task text, every code version
   from `LLM_History/` (byte for byte, as saved: class/constructor renamed) and the test report sent before each round (rebuilt from results/quicktest_restarts.csv; the exact typed text was not stored).
   The chatbot's explanation text is not available. No code was changed.
+
+### ChatGPT attempt 5 - one-shot (OS)
+- LLM_ChatGPT_5_OS.cs saved (class renamed only), compiles. Name property "Adaptive Rover Navigation". Quick Test 2/10 (1 collision, 7 timeouts, oscillating) via run_quicktest.py (0 restarts).
+  Attempt open (0 of 3 rounds used). model_version, human_minutes still to fill.
