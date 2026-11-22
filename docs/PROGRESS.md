@@ -428,3 +428,7 @@ Checklist of project phases. Update at the end of each phase.
 ### ChatGPT attempt 6 - feedback round 3 (final)
 - Round 3 compiles (class renamed only); Name "Rover Explorer V4". Quick Test 6/10 (0 collisions, 4 timeouts, oscillating). FINAL FB result = 6/10 (last-round rule).
   Scores: OS 3, r1 3, r2 3, r3 6. All files in `LLM_History/`. Attempt closed. model_version, human_minutes still to fill. (Message had only the code; taken as round 3.)
+
+### ChatGPT attempt 6 - minor protocol deviation (kept)
+- In round 2 the message to ChatGPT was only "Please use your own best judgement and send the complete code" instead of the round-1 test report (3/10): ChatGPT received less information, not more.
+  Attempt kept (not excluded). Feedback rounds confirmed 3; round 3 was the exact test report line (text not supplied, not recorded). Scores: OS 3, r1 3, r2 3, r3 6 (final FB 6/10).
