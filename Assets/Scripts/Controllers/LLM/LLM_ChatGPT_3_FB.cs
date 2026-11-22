@@ -3,17 +3,13 @@ using UnityEngine;
 
 public class LLM_ChatGPT_3_FB : IRoverController
 {
-    public string Name => "Adaptive Safe Navigation V2";
+    public string Name => "Persistent Adaptive Navigation V3";
 
     private const float MAX_RANGE = 4.0f;
 
-    // Conservative clearance thresholds.
-    private const float FRONT_SAFE = 0.75f;
-    private const float SIDE_SAFE = 0.48f;
-    private const float DIAGONAL_SAFE = 0.65f;
-
-    private const float EMERGENCY_FRONT = 0.30f;
-    private const float EMERGENCY_SIDE = 0.23f;
+    private const float FRONT_TRIGGER = 0.90f;
+    private const float FRONT_CRITICAL = 0.30f;
+    private const float SIDE_TARGET = 0.48f;
 
     private float frontF;
     private float leftF;
@@ -23,18 +19,43 @@ public class LLM_ChatGPT_3_FB : IRoverController
 
     private bool initialized;
 
+    // Steering memory
     private float lastTurn;
+    private int lastBypassDirection;
 
-    private int stuckCounter;
-    private int escapeCounter;
-    private int clearCounter;
+    // Obstacle navigation state
+    private bool avoiding;
+    private int bypassDirection;
+    private int avoidTimer;
+    private int clearTimer;
 
-    private float bestGoalDistance;
+    // Progress monitoring
+    private float progressDistance;
+    private int progressTimer;
+    private int stuckWindows;
+    private int switchCooldown;
 
-    private int preferredTurn;
+    // Sensor filtering
+    private float Filter(float previous, float current)
+    {
+        if (float.IsNaN(current) || float.IsInfinity(current))
+            return previous;
 
-    private bool wallFollowing;
-    private bool escaping;
+        current = Mathf.Clamp(current, 0.02f, MAX_RANGE);
+
+        if (current < previous)
+            return Mathf.Lerp(previous, current, 0.75f);
+
+        return Mathf.Min(current, previous + 0.20f);
+    }
+
+    private float Clean(float value)
+    {
+        if (float.IsNaN(value) || float.IsInfinity(value))
+            return MAX_RANGE;
+
+        return Mathf.Clamp(value, 0.02f, MAX_RANGE);
+    }
 
     public void ResetController()
     {
@@ -47,52 +68,27 @@ public class LLM_ChatGPT_3_FB : IRoverController
         initialized = false;
 
         lastTurn = 0f;
+        lastBypassDirection = 1;
 
-        stuckCounter = 0;
-        escapeCounter = 0;
-        clearCounter = 0;
+        avoiding = false;
+        bypassDirection = 1;
 
-        bestGoalDistance = float.MaxValue;
+        avoidTimer = 0;
+        clearTimer = 0;
 
-        preferredTurn = 1;
-
-        wallFollowing = false;
-        escaping = false;
-    }
-
-    private float ClampRange(float value)
-    {
-        if (float.IsNaN(value) || float.IsInfinity(value))
-            return MAX_RANGE;
-
-        return Mathf.Clamp(value, 0.02f, MAX_RANGE);
-    }
-
-    // React quickly to obstacles.
-    // Recover slowly from suspicious sudden increases.
-    private float Filter(float previous, float current)
-    {
-        current = ClampRange(current);
-
-        if (!initialized)
-            return current;
-
-        if (current < previous)
-            return Mathf.Lerp(previous, current, 0.75f);
-
-        return Mathf.Min(
-            current,
-            previous + 0.12f
-        );
+        progressDistance = float.MaxValue;
+        progressTimer = 0;
+        stuckWindows = 0;
+        switchCooldown = 0;
     }
 
     private void UpdateSensors(Observation obs)
     {
-        float f = ClampRange(obs.front);
-        float l = ClampRange(obs.left);
-        float r = ClampRange(obs.right);
-        float ls = ClampRange(obs.leftSide);
-        float rs = ClampRange(obs.rightSide);
+        float f = Clean(obs.front);
+        float l = Clean(obs.left);
+        float r = Clean(obs.right);
+        float ls = Clean(obs.leftSide);
+        float rs = Clean(obs.rightSide);
 
         if (!initialized)
         {
@@ -113,208 +109,304 @@ public class LLM_ChatGPT_3_FB : IRoverController
         rightSideF = Filter(rightSideF, rs);
     }
 
-    private float Risk(float distance, float safeDistance)
+    private float GoalSteering(float angle)
     {
-        if (distance >= safeDistance)
-            return 0f;
-
-        return Mathf.Clamp01(
-            (safeDistance - distance) / safeDistance
-        );
+        return Mathf.Clamp(angle / 75f, -1f, 1f);
     }
 
-    private float LeftClearance()
+    private float LeftScore()
     {
-        return Mathf.Min(
-            leftF,
-            leftSideF
-        );
+        return leftF * 0.65f + leftSideF * 0.35f;
     }
 
-    private float RightClearance()
+    private float RightScore()
     {
-        return Mathf.Min(
-            rightF,
-            rightSideF
-        );
+        return rightF * 0.65f + rightSideF * 0.35f;
     }
 
-    // Determines which direction offers more room.
-    private int BestTurningDirection()
+    // Select an obstacle-bypass direction.
+    // Once selected, it remains locked until the obstacle is cleared
+    // or progress monitoring detects a persistent deadlock.
+    private int ChooseDirection(float goalAngle)
     {
-        float leftScore =
-            Mathf.Min(leftF, leftSideF * 1.15f);
+        float left = LeftScore();
+        float right = RightScore();
 
-        float rightScore =
-            Mathf.Min(rightF, rightSideF * 1.15f);
-
-        if (leftScore > rightScore + 0.08f)
+        if (left > right + 0.12f)
             return 1;
 
-        if (rightScore > leftScore + 0.08f)
+        if (right > left + 0.12f)
             return -1;
 
-        return preferredTurn;
+        if (Mathf.Abs(goalAngle) > 15f)
+            return goalAngle > 0f ? 1 : -1;
+
+        return lastBypassDirection;
     }
 
-    // Evaluate danger on the side toward which the rover turns.
-    private float TurningRisk(int direction)
+    private bool FrontBlocked()
     {
-        if (direction > 0)
+        return frontF < FRONT_TRIGGER;
+    }
+
+    private bool GoalPathBlocked(float goalAngle)
+    {
+        if (Mathf.Abs(goalAngle) < 40f)
+            return frontF < 0.95f;
+
+        if (goalAngle > 0f)
+            return leftF < 0.65f;
+
+        return rightF < 0.65f;
+    }
+
+    private void StartAvoidance(float goalAngle)
+    {
+        avoiding = true;
+
+        bypassDirection = ChooseDirection(goalAngle);
+
+        lastBypassDirection = bypassDirection;
+
+        avoidTimer = 0;
+        clearTimer = 0;
+    }
+
+    private void UpdateAvoidance(float goalAngle)
+    {
+        if (!avoiding)
+            return;
+
+        avoidTimer++;
+
+        // A minimum commitment prevents rapid left-right switching.
+        if (avoidTimer < 20)
         {
-            return Mathf.Max(
-                Risk(leftF, DIAGONAL_SAFE),
-                Risk(leftSideF, SIDE_SAFE) * 0.9f
+            clearTimer = 0;
+            return;
+        }
+
+        bool clear =
+            frontF > 1.25f &&
+            leftF > 0.90f &&
+            rightF > 0.90f &&
+            Mathf.Abs(goalAngle) < 38f;
+
+        if (clear)
+            clearTimer++;
+        else
+            clearTimer = 0;
+
+        // Require sustained clearance before returning to normal mode.
+        if (clearTimer >= 14)
+        {
+            avoiding = false;
+            clearTimer = 0;
+            avoidTimer = 0;
+            stuckWindows = 0;
+        }
+    }
+
+    // Track goal-distance improvement.
+    private void UpdateProgress(float distance, float goalAngle)
+    {
+        progressTimer++;
+
+        if (progressDistance == float.MaxValue)
+            progressDistance = distance;
+
+        if (switchCooldown > 0)
+            switchCooldown--;
+
+        // Evaluate progress every 1.5 seconds.
+        if (progressTimer < 30)
+            return;
+
+        progressTimer = 0;
+
+        if (distance < progressDistance - 0.07f)
+        {
+            progressDistance = distance;
+            stuckWindows = 0;
+            return;
+        }
+
+        stuckWindows++;
+
+        if (stuckWindows >= 2 && switchCooldown == 0)
+        {
+            if (!avoiding)
+            {
+                StartAvoidance(goalAngle);
+            }
+            else
+            {
+                // Change direction only after sustained lack of progress.
+                int alternative = -bypassDirection;
+
+                float currentScore =
+                    alternative > 0 ? LeftScore() : RightScore();
+
+                float oldScore =
+                    bypassDirection > 0 ? LeftScore() : RightScore();
+
+                // Switch if the alternative is sufficiently clearer,
+                // or after repeated failed progress windows.
+                if (currentScore > oldScore + 0.10f ||
+                    stuckWindows >= 3)
+                {
+                    bypassDirection = alternative;
+
+                    lastBypassDirection = alternative;
+
+                    avoidTimer = 0;
+                    clearTimer = 0;
+                }
+            }
+
+            stuckWindows = 0;
+            switchCooldown = 50;
+        }
+
+        progressDistance = distance;
+    }
+
+    // Normal reactive obstacle avoidance.
+    private float CalculateReactiveTurn()
+    {
+        float turn = 0f;
+
+        // Diagonal obstacles.
+        if (leftF < 0.85f)
+        {
+            turn -= Mathf.Clamp(
+                (0.85f - leftF) * 1.5f,
+                0f,
+                0.75f
             );
         }
 
-        return Mathf.Max(
-            Risk(rightF, DIAGONAL_SAFE),
-            Risk(rightSideF, SIDE_SAFE) * 0.9f
-        );
-    }
-
-    // Obstacle avoidance using all five sensors.
-    private float CalculateAvoidance()
-    {
-        float frontRisk = Risk(frontF, FRONT_SAFE);
-
-        float leftRisk = Risk(leftF, DIAGONAL_SAFE);
-        float rightRisk = Risk(rightF, DIAGONAL_SAFE);
-
-        float leftSideRisk = Risk(leftSideF, SIDE_SAFE);
-        float rightSideRisk = Risk(rightSideF, SIDE_SAFE);
-
-        float turn = 0f;
-
-        // Obstacles on the left push the rover right.
-        turn -= leftRisk * 0.75f;
-        turn -= leftSideRisk * 0.65f;
-
-        // Obstacles on the right push the rover left.
-        turn += rightRisk * 0.75f;
-        turn += rightSideRisk * 0.65f;
-
-        // Direct frontal obstacle.
-        if (frontRisk > 0.05f)
+        if (rightF < 0.85f)
         {
-            int direction = BestTurningDirection();
+            turn += Mathf.Clamp(
+                (0.85f - rightF) * 1.5f,
+                0f,
+                0.75f
+            );
+        }
 
-            turn = direction *
-                   (0.65f + frontRisk * 0.35f);
+        // Side clearance.
+        if (leftSideF < 0.45f)
+            turn -= 0.35f;
+
+        if (rightSideF < 0.45f)
+            turn += 0.35f;
+
+        // Strong frontal avoidance.
+        if (frontF < FRONT_TRIGGER)
+        {
+            turn = ChooseDirection(0f) *
+                   Mathf.Clamp(
+                       (FRONT_TRIGGER - frontF) * 1.8f,
+                       0.45f,
+                       1f
+                   );
         }
 
         return Mathf.Clamp(turn, -1f, 1f);
     }
 
-    // Check whether the requested turning direction is safe.
-    private float ProtectTurning(float turn)
+    // Persistent wall-following / obstacle bypass.
+    private float CalculateBypassTurn(float goalAngle)
     {
-        if (Mathf.Abs(turn) < 0.08f)
-            return turn;
+        int direction = bypassDirection;
 
-        int direction = turn > 0f ? 1 : -1;
+        // Obstacle should generally remain on the opposite side
+        // of the selected bypass direction.
+        float obstacleSideDistance =
+            direction > 0 ? rightSideF : leftSideF;
 
-        float risk = TurningRisk(direction);
+        float turn;
 
-        if (risk > 0.55f)
+        if (frontF < 0.65f)
         {
-            int alternative = -direction;
-
-            float alternativeRisk =
-                TurningRisk(alternative);
-
-            if (alternativeRisk < risk - 0.10f)
-            {
-                preferredTurn = alternative;
-
-                return alternative * Mathf.Max(
-                    0.65f,
-                    Mathf.Abs(turn)
-                );
-            }
-
-            // Both directions are restricted.
-            // Stop forward motion and turn cautiously.
-            return direction * 0.35f;
+            // Keep turning toward the selected open side.
+            turn = direction * 0.90f;
         }
-
-        return turn;
-    }
-
-    private void UpdateProgress(float distance)
-    {
-        if (distance < bestGoalDistance - 0.04f)
+        else if (obstacleSideDistance < 1.10f)
         {
-            bestGoalDistance = distance;
-            stuckCounter = 0;
+            // Maintain a relatively stable distance from the obstacle.
+            float correction = Mathf.Clamp(
+                (SIDE_TARGET - obstacleSideDistance) * 1.6f,
+                -0.55f,
+                0.55f
+            );
+
+            turn = direction * correction;
+
+            // Gradually incorporate the goal direction.
+            turn += GoalSteering(goalAngle) * 0.15f;
         }
         else
         {
-            stuckCounter++;
+            // Obstacle is not yet alongside the rover.
+            // Continue around it without abruptly reversing direction.
+            turn = direction * 0.30f +
+                   GoalSteering(goalAngle) * 0.20f;
         }
 
-        // Detect lack of progress over approximately four seconds.
-        if (stuckCounter > 80 && !escaping)
-        {
-            escaping = true;
-            wallFollowing = true;
+        // Do not steer toward a very close obstacle.
+        if (direction > 0 && leftF < 0.35f)
+            turn = -0.35f;
 
-            escapeCounter = 0;
+        if (direction < 0 && rightF < 0.35f)
+            turn = 0.35f;
 
-            preferredTurn = BestTurningDirection();
-        }
-
-        if (escaping)
-        {
-            escapeCounter++;
-
-            if (escapeCounter > 28)
-            {
-                escaping = false;
-                stuckCounter = 0;
-                bestGoalDistance = distance;
-            }
-        }
+        return Mathf.Clamp(turn, -1f, 1f);
     }
 
     private float CalculateSpeed(float turn)
     {
-        float speed = 1.0f;
+        float speed = 0.65f;
 
-        float frontRisk = Risk(frontF, FRONT_SAFE);
+        // Reduce speed near frontal obstacles.
+        if (frontF < 1.0f)
+        {
+            speed = Mathf.Min(
+                speed,
+                Mathf.Lerp(
+                    0.45f,
+                    0.18f,
+                    Mathf.Clamp01((1.0f - frontF) / 0.70f)
+                )
+            );
+        }
 
-        // Reduce speed as the front obstacle approaches.
-        speed *= 1f - frontRisk * 0.85f;
+        // Turning speed management.
+        float absTurn = Mathf.Abs(turn);
 
-        // Turning requires additional clearance.
-        float turnAmount = Mathf.Abs(turn);
+        if (absTurn > 0.35f)
+            speed = Mathf.Min(speed, 0.38f);
 
-        if (turnAmount > 0.25f)
-            speed = Mathf.Min(speed, 0.35f);
+        if (absTurn > 0.65f)
+            speed = Mathf.Min(speed, 0.24f);
 
-        if (turnAmount > 0.45f)
-            speed = Mathf.Min(speed, 0.18f);
+        if (absTurn > 0.85f)
+            speed = Mathf.Min(speed, 0.16f);
 
-        if (turnAmount > 0.70f)
-            speed = Mathf.Min(speed, 0.08f);
-
-        // Critical front clearance: stop and rotate.
-        if (frontF < EMERGENCY_FRONT)
+        // Critical frontal clearance.
+        if (frontF < 0.30f)
             speed = 0f;
 
-        // Extremely close side clearance.
-        if (leftSideF < EMERGENCY_SIDE ||
-            rightSideF < EMERGENCY_SIDE)
+        // Avoid moving forward if a side is extremely close.
+        if (leftSideF < 0.19f ||
+            rightSideF < 0.19f)
         {
             speed = 0f;
         }
 
-        // Do not drive forward into a blocked frontal corridor.
-        if (frontF < 0.42f)
-            speed = 0f;
-
-        if (escaping)
+        // Avoid driving into a close obstacle.
+        if (frontF < 0.22f)
             speed = 0f;
 
         return Mathf.Clamp(speed, 0f, 1f);
@@ -339,140 +431,62 @@ public class LLM_ChatGPT_3_FB : IRoverController
         if (goalDistance < 0.15f)
             return (0f, 0f);
 
-        UpdateProgress(goalDistance);
+        UpdateProgress(goalDistance, goalAngle);
 
-        float goalTurn = Mathf.Clamp(
-            goalAngle / 90f,
-            -1f,
-            1f
-        );
+        // Begin obstacle bypass only when necessary.
+        if (!avoiding && GoalPathBlocked(goalAngle))
+        {
+            StartAvoidance(goalAngle);
+        }
 
-        float avoidanceTurn = CalculateAvoidance();
-
-        float frontRisk = Risk(frontF, FRONT_SAFE);
+        UpdateAvoidance(goalAngle);
 
         float turn;
 
-        // Recovery from a possible dead end.
-        if (escaping)
+        if (avoiding)
         {
-            turn = preferredTurn * 0.90f;
-
-            lastTurn = turn;
-
-            return (0f, turn);
-        }
-
-        // Detect obstacles along the desired direction.
-        bool blocked =
-            (Mathf.Abs(goalAngle) < 40f &&
-             frontF < 0.85f) ||
-
-            (goalAngle > 20f &&
-             leftF < 0.55f) ||
-
-            (goalAngle < -20f &&
-             rightF < 0.55f);
-
-        if (blocked && !wallFollowing)
-        {
-            wallFollowing = true;
-            preferredTurn = BestTurningDirection();
-        }
-
-        // Wall-following release condition.
-        if (wallFollowing)
-        {
-            if (frontF > 1.15f &&
-                leftF > 0.85f &&
-                rightF > 0.85f &&
-                Mathf.Abs(goalAngle) < 35f)
-            {
-                clearCounter++;
-            }
-            else
-            {
-                clearCounter = 0;
-            }
-
-            if (clearCounter > 20)
-            {
-                wallFollowing = false;
-                clearCounter = 0;
-            }
-        }
-
-        if (wallFollowing)
-        {
-            // Prefer the direction with more clearance.
-            float direction =
-                preferredTurn;
-
-            float wallTurn = direction * 0.55f;
-
-            // If frontal space is clear, gradually return
-            // toward the goal.
-            if (frontF > 1.0f)
-            {
-                turn = wallTurn * 0.45f +
-                       goalTurn * 0.55f;
-            }
-            else
-            {
-                turn = wallTurn;
-            }
+            turn = CalculateBypassTurn(goalAngle);
         }
         else
         {
-            // Normal goal-directed navigation.
-            float goalWeight =
-                1f - frontRisk * 0.65f;
+            float goalTurn = GoalSteering(goalAngle);
 
-            float obstacleWeight =
-                1f - goalWeight;
+            float obstacleTurn = CalculateReactiveTurn();
+
+            float obstacleInfluence =
+                Mathf.Clamp01(
+                    (1.0f - frontF) / 0.75f
+                );
 
             turn =
-                goalTurn * goalWeight +
-                avoidanceTurn * obstacleWeight;
+                goalTurn * (1f - obstacleInfluence) +
+                obstacleTurn * obstacleInfluence;
         }
 
-        // Emergency frontal obstacle response.
+        // Steering smoothing.
+        // Use stronger responsiveness during emergency avoidance.
         if (frontF < 0.55f)
         {
-            turn = BestTurningDirection();
+            turn = Mathf.Lerp(lastTurn, turn, 0.85f);
         }
-
-        // Prevent steering into an obstacle.
-        turn = ProtectTurning(turn);
-
-        // Smooth normal steering.
-        bool emergency =
-            frontF < 0.55f ||
-            leftSideF < EMERGENCY_SIDE ||
-            rightSideF < EMERGENCY_SIDE;
-
-        if (!emergency)
+        else
         {
-            turn = Mathf.Lerp(
-                lastTurn,
-                turn,
-                0.70f
-            );
+            turn = Mathf.Lerp(lastTurn, turn, 0.55f);
         }
 
         turn = Mathf.Clamp(turn, -1f, 1f);
 
         lastTurn = turn;
 
-        // Adaptive speed control.
         float speed = CalculateSpeed(turn);
 
-        // Large goal-angle changes: turn first, then move.
-        if (Mathf.Abs(goalAngle) > 100f)
-            speed = Mathf.Min(speed, 0.08f);
-
-        if (Mathf.Abs(goalAngle) > 145f)
+        // Rotate toward a goal behind the rover before advancing.
+        if (Mathf.Abs(goalAngle) > 125f)
             speed = 0f;
+
+        // Keep moving slowly during normal obstacle bypass.
+        if (avoiding && frontF > FRONT_CRITICAL)
+            speed = Mathf.Min(speed, 0.30f);
 
         return (speed, turn);
     }
