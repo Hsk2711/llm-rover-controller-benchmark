@@ -347,3 +347,14 @@ Checklist of project phases. Update at the end of each phase.
 ### ChatGPT attempt 4 - feedback round 2
 - Round 2 compiles (class renamed only); Name "Adaptive Rover Navigation V3". Quick Test 2/10 (0 collisions, 8 timeouts, dead end). Scores: OS 2, r1 2, r2 2.
   Current FB result (last-round rule) 2/10. File `LLM_History/LLM_ChatGPT_4_FB_r2.cs`. 2 of 3 rounds used.
+
+### ChatGPT attempt 4 - feedback round 3 (final)
+- Round 3 compiles (class renamed only); Name "Adaptive Bug Navigation V4". Quick Test 2/10 (0 collisions, 8 timeouts, dead end). FINAL FB result = 2/10 (last-round rule).
+  Scores: OS 2, r1 2, r2 2, r3 2. All files in `LLM_History/`. Attempt closed. model_version, human_minutes still to fill.
+
+### Driver start route changed (2026-11-22)
+- Second long stall episode (10 driver runs x 5 restarts failed again right after a new script was compiled), while a plain `editor.playmode start` worked immediately (frame 500+ in ~19 s)
+  and a Quick Test started inside that running Play mode worked. Likely cause: entering Play mode from inside a `script eval` call (what QuickTestWindow.Start does) is the fragile step.
+- tools/run_quicktest.py now enters Play mode with `editor.playmode start`, waits until the frame counter runs, then starts the Quick Test inside Play mode. The simulation and the
+  Quick Test code are untouched. Checks: LLM_ChatGPT_2_OS gives the same 9/10 and its per-run file is byte-identical (git diff clean); ChatGPT_4_FB gives the same result hand-started
+  and via the driver (identical file). Not proven as the root cause; Phase 7 review still open.

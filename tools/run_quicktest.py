@@ -3,6 +3,7 @@
 
     python tools/run_quicktest.py LLM_Gemini_1_FB
 
+Start route: Play mode is entered with `editor.playmode start` and the Quick Test is started from inside Play mode (changed 2026-11-22).
 Why: now and then the Editor enters Play mode but the game loop stays on frame 1 and the test never starts (seen ~1 in 3 runs
 after a new file was added, cost up to 20 min each time). This driver starts the test, polls the Editor's frame counter, and when
 the frame has not advanced past 2 for STALL_SECONDS it stops Play mode and starts again (up to ATTEMPTS times). Nothing about the
@@ -57,6 +58,19 @@ def main():
     for attempt in range(1, ATTEMPTS + 1):
         unity("editor.playmode", "stop")
         time.sleep(10)
+        # Enter Play mode with the plain CLI command (it worked in every stall episode, while entering Play mode from inside a
+        # script eval did not), wait until the game loop really runs, and only then start the Quick Test inside Play mode.
+        unity("editor.playmode", "start")
+        t0 = time.time()
+        f = None
+        while time.time() - t0 < STALL_SECONDS:
+            f = frame()
+            if f is not None and f > 5:
+                break
+            time.sleep(3)
+        else:
+            print("attempt %d: Play mode did not start (frame %s after %d s) - stopping and retrying" % (attempt, f, STALL_SECONDS))
+            continue
         mark = time.time()
         unity("script", "eval", "--code", 'QuickTestWindow.Start("%s"); "started"' % name)
         t0 = time.time()
@@ -64,7 +78,7 @@ def main():
         last_frame = 0
         while time.time() - t0 < RUN_SECONDS:
             if os.path.exists(result) and os.path.getmtime(result) > mark:
-                print("attempt %d ok after %d s:" % (attempt, time.time() - t0))
+                print("attempt %d ok after %d s:" % (attempt, time.time() - start_all))
                 report = open(result, encoding="utf-8").readline().strip()
                 print(report)
                 print("restarts needed: %d" % (attempt - 1))

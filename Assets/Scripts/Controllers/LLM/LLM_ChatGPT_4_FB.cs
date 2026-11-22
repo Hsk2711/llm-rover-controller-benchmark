@@ -3,109 +3,110 @@ using UnityEngine;
 
 public class LLM_ChatGPT_4_FB : IRoverController
 {
-    public string Name => "Adaptive Rover Navigation V3";
+    public string Name => "Adaptive Bug Navigation V4";
 
     // Navigation states
-    private const int GOAL_SEEKING = 0;
-    private const int WALL_FOLLOWING = 1;
-    private const int ESCAPE = 2;
+    private const int SEEK = 0;
+    private const int FOLLOW = 1;
+    private const int ESCAPE_TURN = 2;
+    private const int ESCAPE_MOVE = 3;
 
     private int state;
 
-    // Wall side: -1 = left wall, +1 = right wall
+    // Boundary memory
     private int wallSide;
+    private float obstacleStartDistance;
+    private int wallTicks;
+    private int clearTicks;
 
     // Escape memory
     private int escapeDirection;
     private int lastEscapeDirection;
     private int escapeAttempts;
-    private float escapeAngle;
     private int escapeTicks;
     private int escapeCooldown;
 
-    // Filtered sensor readings
-    private float fFront;
-    private float fLeft;
-    private float fRight;
-    private float fLeftSide;
-    private float fRightSide;
+    // Sensor filters
+    private float front;
+    private float left;
+    private float right;
+    private float leftSide;
+    private float rightSide;
 
-    // False-clear reading protection
-    private int cFront;
-    private int cLeft;
-    private int cRight;
-    private int cLeftSide;
-    private int cRightSide;
+    private int frontClear;
+    private int leftClear;
+    private int rightClear;
+    private int leftSideClear;
+    private int rightSideClear;
 
-    // Progress monitoring
+    // Progress tracking
     private float bestDistance;
     private int stuckTicks;
-    private int wallTicks;
-    private int clearTicks;
     private int totalTicks;
 
     // Steering memory
     private float previousTurn;
 
     // Constants
-    private const float MAX_RANGE = 4.0f;
+    private const float MAX_RANGE = 4f;
 
-    private const float FRONT_STOP = 0.25f;
-    private const float FRONT_DANGER = 0.42f;
-    private const float FRONT_TRIGGER = 0.70f;
+    private const float FRONT_STOP = 0.23f;
+    private const float FRONT_DANGER = 0.40f;
+    private const float FRONT_TRIGGER = 0.68f;
 
-    private const float SIDE_DANGER = 0.24f;
-    private const float SIDE_TARGET = 0.42f;
+    private const float SIDE_DANGER = 0.25f;
+    private const float WALL_TARGET = 0.43f;
 
     private const int STUCK_LIMIT = 100;
-    private const int ESCAPE_COOLDOWN = 70;
+    private const int ESCAPE_COOLDOWN = 45;
 
-    private const float ESCAPE_MAX_ANGLE = 165f;
+    private const int TURN_DURATION = 30;
+    private const int MOVE_DURATION = 40;
 
-    private const int MIN_WALL_TICKS = 20;
-    private const int CLEAR_REQUIRED = 5;
+    private const int MIN_WALL_TIME = 15;
+    private const int CLEAR_REQUIRED = 8;
 
-    // ------------------------------------------------
+    // -------------------------------------------------
     // RESET
-    // ------------------------------------------------
+    // -------------------------------------------------
 
     public void ResetController()
     {
-        state = GOAL_SEEKING;
+        state = SEEK;
 
         wallSide = 1;
+        obstacleStartDistance = MAX_RANGE;
+        wallTicks = 0;
+        clearTicks = 0;
 
         escapeDirection = 1;
         lastEscapeDirection = 0;
         escapeAttempts = 0;
-        escapeAngle = 0f;
         escapeTicks = 0;
         escapeCooldown = 0;
 
-        fFront = MAX_RANGE;
-        fLeft = MAX_RANGE;
-        fRight = MAX_RANGE;
-        fLeftSide = MAX_RANGE;
-        fRightSide = MAX_RANGE;
+        front = MAX_RANGE;
+        left = MAX_RANGE;
+        right = MAX_RANGE;
+        leftSide = MAX_RANGE;
+        rightSide = MAX_RANGE;
 
-        cFront = 0;
-        cLeft = 0;
-        cRight = 0;
-        cLeftSide = 0;
-        cRightSide = 0;
+        frontClear = 0;
+        leftClear = 0;
+        rightClear = 0;
+        leftSideClear = 0;
+        rightSideClear = 0;
 
         bestDistance = float.MaxValue;
         stuckTicks = 0;
-        wallTicks = 0;
-        clearTicks = 0;
         totalTicks = 0;
 
         previousTurn = 0f;
     }
 
-    // ------------------------------------------------
+    // -------------------------------------------------
     // SENSOR FILTERING
-    // ------------------------------------------------
+    // -------------------------------------------------
 
     private float ReadSensor(
         float raw,
@@ -114,7 +115,7 @@ public class LLM_ChatGPT_4_FB : IRoverController
     {
         raw = Mathf.Clamp(raw, 0.02f, MAX_RANGE);
 
-        // An occasional 4m reading may be false.
+        // Protect against occasional false 4m readings.
         if (raw >= 3.95f)
         {
             clearCount++;
@@ -125,7 +126,7 @@ public class LLM_ChatGPT_4_FB : IRoverController
             // Gradually release old obstacle readings.
             previous = Mathf.Min(
                 MAX_RANGE,
-                previous + 0.35f
+                previous + 0.30f
             );
 
             return previous;
@@ -133,25 +134,32 @@ public class LLM_ChatGPT_4_FB : IRoverController
 
         clearCount = 0;
 
-        // React quickly to approaching obstacles.
+        // A newly detected obstacle must be accepted quickly.
+        if (previous >= 3.95f)
+        {
+            previous = raw;
+            return previous;
+        }
+
+        // Fast response to decreasing distance.
         if (raw < previous)
         {
             previous =
-                previous * 0.30f + raw * 0.70f;
+                previous * 0.25f + raw * 0.75f;
         }
         else
         {
-            // Gradually accept increasing distance.
+            // Slower response to increasing distance.
             previous =
-                previous * 0.72f + raw * 0.28f;
+                previous * 0.70f + raw * 0.30f;
         }
 
         return previous;
     }
 
-    // ------------------------------------------------
-    // UTILITY FUNCTIONS
-    // ------------------------------------------------
+    // -------------------------------------------------
+    // UTILITY
+    // -------------------------------------------------
 
     private float ClampTurn(float value)
     {
@@ -163,36 +171,34 @@ public class LLM_ChatGPT_4_FB : IRoverController
         return Mathf.Clamp(value, 0f, 1f);
     }
 
-    private float GetLeftSpace()
+    private float LeftSpace()
     {
-        return Mathf.Min(fLeft, fLeftSide);
+        return Mathf.Min(left, leftSide);
     }
 
-    private float GetRightSpace()
+    private float RightSpace()
     {
-        return Mathf.Min(fRight, fRightSide);
+        return Mathf.Min(right, rightSide);
     }
 
     private int BestOpenDirection()
     {
-        float leftSpace = GetLeftSpace();
-        float rightSpace = GetRightSpace();
+        float l = LeftSpace();
+        float r = RightSpace();
 
-        if (leftSpace > rightSpace + 0.12f)
+        if (l > r + 0.12f)
             return 1;
 
-        if (rightSpace > leftSpace + 0.12f)
+        if (r > l + 0.12f)
             return -1;
 
-        // If the previous escape direction failed,
-        // try the opposite direction.
         if (lastEscapeDirection != 0)
             return -lastEscapeDirection;
 
         return escapeAttempts % 2 == 0 ? 1 : -1;
     }
 
-    // Limit abrupt steering changes during normal driving.
+    // Limit sudden steering changes.
     private float SmoothTurn(float requested)
     {
         requested = ClampTurn(requested);
@@ -201,8 +207,8 @@ public class LLM_ChatGPT_4_FB : IRoverController
 
         difference = Mathf.Clamp(
             difference,
-            -0.18f,
-            0.18f
+            -0.14f,
+            0.14f
         );
 
         previousTurn = ClampTurn(
@@ -212,53 +218,60 @@ public class LLM_ChatGPT_4_FB : IRoverController
         return previousTurn;
     }
 
-    // ------------------------------------------------
-    // PROGRESS MONITOR
-    // ------------------------------------------------
+    // -------------------------------------------------
+    // PROGRESS DETECTION
+    // -------------------------------------------------
 
-    private bool IsStuck(float distance)
+    private bool CheckProgress(float distance)
     {
-        if (distance < bestDistance - 0.12f)
+        if (distance < bestDistance - 0.10f)
         {
             bestDistance = distance;
             stuckTicks = 0;
-
             return false;
         }
 
         stuckTicks++;
 
-        if (stuckTicks >= STUCK_LIMIT)
-        {
-            if (escapeCooldown <= 0)
-                return true;
-        }
-
-        return false;
+        return stuckTicks >= STUCK_LIMIT &&
+               escapeCooldown <= 0;
     }
 
-    // ------------------------------------------------
-    // ENTER ESCAPE STATE
-    // ------------------------------------------------
+    // -------------------------------------------------
+    // START ESCAPE
+    // -------------------------------------------------
 
     private void StartEscape()
     {
-        state = ESCAPE;
+        state = ESCAPE_TURN;
 
         escapeDirection = BestOpenDirection();
 
-        // Do not immediately repeat a failed direction.
-        if (lastEscapeDirection != 0 &&
-            escapeAttempts > 0)
+        // Avoid repeating the last failed direction
+        // unless the alternative is substantially blocked.
+        if (lastEscapeDirection != 0)
         {
-            escapeDirection = -lastEscapeDirection;
+            int alternative = -lastEscapeDirection;
+
+            float alternativeSpace =
+                alternative == 1
+                ? LeftSpace()
+                : RightSpace();
+
+            float currentSpace =
+                escapeDirection == 1
+                ? LeftSpace()
+                : RightSpace();
+
+            if (alternativeSpace > 0.35f)
+                escapeDirection = alternative;
+            else if (currentSpace < 0.25f)
+                escapeDirection = alternative;
         }
 
         lastEscapeDirection = escapeDirection;
 
         escapeAttempts++;
-
-        escapeAngle = 0f;
         escapeTicks = 0;
 
         escapeCooldown = ESCAPE_COOLDOWN;
@@ -270,49 +283,21 @@ public class LLM_ChatGPT_4_FB : IRoverController
         previousTurn = 0f;
     }
 
-    // ------------------------------------------------
-    // ESCAPE MANOEUVRE
-    // ------------------------------------------------
+    // -------------------------------------------------
+    // ESCAPE PHASE 1: TURN
+    // -------------------------------------------------
 
-    private (float speed01, float turn) Escape()
+    private (float speed01, float turn) EscapeTurn()
     {
         escapeTicks++;
 
-        // Turn in one fixed direction.
-        // Do not alternate steering every frame.
-        float turn = escapeDirection;
+        // Turn consistently towards the selected opening.
+        float turn = escapeDirection * 1f;
 
-        // Accumulate commanded rotation.
-        escapeAngle += 4.5f;
-
-        bool frontClear = fFront > 0.95f;
-
-        bool goalApproaching =
-            Mathf.Abs(0f) < 0.001f;
-
-        // Once sufficient rotation has occurred,
-        // inspect the new direction.
-        bool escapeFound =
-            escapeAngle >= 75f &&
-            frontClear &&
-            Mathf.Min(fLeft, fRight) > 0.45f;
-
-        bool rotationComplete =
-            escapeAngle >= ESCAPE_MAX_ANGLE;
-
-        if (rotationComplete ||
-            (escapeFound && escapeTicks >= 18))
+        if (escapeTicks >= TURN_DURATION)
         {
-            state = WALL_FOLLOWING;
-
-            // Turned left: follow right boundary.
-            // Turned right: follow left boundary.
-            wallSide = escapeDirection;
-
-            wallTicks = 0;
-            clearTicks = 0;
-            stuckTicks = 0;
-
+            state = ESCAPE_MOVE;
+            escapeTicks = 0;
             previousTurn = 0f;
 
             return (0f, 0f);
@@ -321,67 +306,130 @@ public class LLM_ChatGPT_4_FB : IRoverController
         return (0f, turn);
     }
 
-    // ------------------------------------------------
+    // -------------------------------------------------
+    // ESCAPE PHASE 2: MOVE
+    // -------------------------------------------------
+
+    private (float speed01, float turn) EscapeMove(
+        float goalAngle)
+    {
+        escapeTicks++;
+
+        // If the new direction is blocked, do not advance.
+        if (front < 0.48f)
+        {
+            state = FOLLOW;
+
+            wallSide = escapeDirection;
+
+            wallTicks = 0;
+            clearTicks = 0;
+            stuckTicks = 0;
+
+            bestDistance = MAX_RANGE;
+            previousTurn = 0f;
+
+            return (0f, 0f);
+        }
+
+        // Small heading adjustment while moving.
+        float turn =
+            Mathf.Clamp(goalAngle / 180f, -0.30f, 0.30f);
+
+        float speed = 0.35f;
+
+        if (front < 0.80f)
+            speed = 0.15f;
+
+        if (leftSide < SIDE_DANGER)
+            turn += 0.25f;
+
+        if (rightSide < SIDE_DANGER)
+            turn -= 0.25f;
+
+        if (escapeTicks >= MOVE_DURATION)
+        {
+            state = FOLLOW;
+
+            // Maintain the selected boundary.
+            wallSide = escapeDirection;
+
+            wallTicks = 0;
+            clearTicks = 0;
+            stuckTicks = 0;
+
+            bestDistance = MAX_RANGE;
+            previousTurn = 0f;
+
+            return (0f, 0f);
+        }
+
+        return (
+            ClampSpeed(speed),
+            ClampTurn(turn)
+        );
+    }
+
+    // -------------------------------------------------
     // GOAL SEEKING
-    // ------------------------------------------------
+    // -------------------------------------------------
 
     private (float speed01, float turn) SeekGoal(
         float goalAngle)
     {
         float absAngle = Mathf.Abs(goalAngle);
 
-        // Smooth proportional goal steering.
-        float turn = goalAngle * 0.012f;
+        // Proportional steering towards goal.
+        float turn = goalAngle * 0.015f;
 
-        // Diagonal obstacle repulsion.
+        // Diagonal obstacle avoidance.
         float leftRepulsion =
-            Mathf.Clamp01((0.90f - fLeft) / 0.90f);
+            Mathf.Clamp01((0.90f - left) / 0.90f);
 
         float rightRepulsion =
-            Mathf.Clamp01((0.90f - fRight) / 0.90f);
+            Mathf.Clamp01((0.90f - right) / 0.90f);
 
         turn +=
             (rightRepulsion - leftRepulsion) * 0.45f;
 
         float speed = 0.85f;
 
-        // Slow down for large heading errors.
+        // Reduce speed for large heading errors.
         speed *=
             1f - Mathf.Clamp01(absAngle / 100f) * 0.65f;
 
-        // Front obstacle handling.
-        if (fFront < FRONT_DANGER)
+        // Front obstacle protection.
+        if (front < FRONT_DANGER)
         {
             speed = 0f;
 
-            // Turn towards the more open direction.
-            turn = GetLeftSpace() > GetRightSpace()
-                ? 0.85f : -0.85f;
+            turn = LeftSpace() > RightSpace()
+                ? 0.85f
+                : -0.85f;
         }
-        else if (fFront < FRONT_TRIGGER)
+        else if (front < FRONT_TRIGGER)
         {
             speed = Mathf.Min(speed, 0.18f);
         }
 
-        // Side collision protection.
-        if (fLeftSide < SIDE_DANGER)
+        // Side protection.
+        if (leftSide < SIDE_DANGER)
         {
             turn -= 0.35f;
             speed = Mathf.Min(speed, 0.15f);
         }
 
-        if (fRightSide < SIDE_DANGER)
+        if (rightSide < SIDE_DANGER)
         {
             turn += 0.35f;
             speed = Mathf.Min(speed, 0.15f);
         }
 
-        // Stop when an obstacle is extremely close.
-        if (fFront < FRONT_STOP)
+        if (front < FRONT_STOP)
             speed = 0f;
 
         speed *=
-            1f - Mathf.Abs(ClampTurn(turn)) * 0.40f;
+            1f - Mathf.Abs(ClampTurn(turn)) * 0.35f;
 
         return (
             ClampSpeed(speed),
@@ -389,118 +437,121 @@ public class LLM_ChatGPT_4_FB : IRoverController
         );
     }
 
-    // ------------------------------------------------
-    // WALL FOLLOWING
-    // ------------------------------------------------
+    // -------------------------------------------------
+    // BOUNDARY FOLLOWING
+    // -------------------------------------------------
 
-    private (float speed01, float turn) FollowWall(
-        float goalAngle)
+    private (float speed01, float turn) FollowBoundary(
+        float goalAngle,
+        float goalDistance)
     {
         wallTicks++;
 
         float sideDistance =
-            wallSide == -1 ? fLeftSide : fRightSide;
+            wallSide == -1 ? leftSide : rightSide;
 
         float diagonalDistance =
-            wallSide == -1 ? fLeft : fRight;
+            wallSide == -1 ? left : right;
 
-        // Maintain a stable distance from the wall.
-        float error = sideDistance - SIDE_TARGET;
+        // Maintain a constant boundary distance.
+        float error = sideDistance - WALL_TARGET;
 
-        // Left wall: steer left if too far away.
-        // Right wall: steer right if too far away.
-        float wallTurn =
-            -wallSide * error * 1.65f;
+        // Left wall: positive error -> turn left.
+        // Right wall: positive error -> turn right.
+        float turn =
+            -wallSide * error * 1.50f;
 
-        float turn = wallTurn * 0.75f;
+        // Modest goal influence.
+        turn +=
+            Mathf.Clamp(goalAngle / 180f, -1f, 1f)
+            * 0.12f;
 
-        // Mild goal influence.
-        turn += Mathf.Clamp(
-            goalAngle / 180f,
-            -1f,
-            1f
-        ) * 0.15f;
-
-        // Detect an obstacle ahead on the followed side.
+        // Diagonal obstacle avoidance.
         float diagonalRepulsion =
             Mathf.Clamp01(
-                (0.75f - diagonalDistance) / 0.75f
+                (0.70f - diagonalDistance) / 0.70f
             );
 
-        turn += wallSide * diagonalRepulsion * 0.45f;
+        turn +=
+            wallSide * diagonalRepulsion * 0.45f;
 
-        float speed = 0.55f;
+        float speed = 0.48f;
 
         // Frontal obstacle handling.
-        if (fFront < FRONT_DANGER)
+        if (front < FRONT_DANGER)
         {
             speed = 0f;
 
-            // Turn away from the followed wall.
             turn = wallSide * 0.85f;
         }
-        else if (fFront < FRONT_TRIGGER)
+        else if (front < FRONT_TRIGGER)
         {
-            speed = 0.14f;
-            turn += wallSide * 0.20f;
+            speed = 0.12f;
+            turn += wallSide * 0.18f;
         }
-        else if (fFront < 1.0f)
+        else if (front < 0.95f)
         {
-            speed = 0.30f;
+            speed = 0.25f;
         }
 
-        // Protect both sides of the rover.
-        if (fLeftSide < SIDE_DANGER)
+        // Protect the sides.
+        if (leftSide < SIDE_DANGER)
         {
-            turn -= 0.35f;
+            turn -= 0.40f;
             speed = Mathf.Min(speed, 0.12f);
         }
 
-        if (fRightSide < SIDE_DANGER)
+        if (rightSide < SIDE_DANGER)
         {
-            turn += 0.35f;
+            turn += 0.40f;
             speed = Mathf.Min(speed, 0.12f);
         }
 
-        if (fFront < FRONT_STOP)
+        if (front < FRONT_STOP)
             speed = 0f;
 
         speed *=
-            1f - Mathf.Abs(ClampTurn(turn)) * 0.35f;
+            1f - Mathf.Abs(ClampTurn(turn)) * 0.30f;
 
-        // ------------------------------------------------
-        // WALL FOLLOWING EXIT
-        // ------------------------------------------------
+        // -------------------------------------------------
+        // BUG-STYLE LEAVE CONDITION
+        // -------------------------------------------------
 
         bool goalAligned =
-            Mathf.Abs(goalAngle) < 28f;
+            Mathf.Abs(goalAngle) < 25f;
 
         bool frontClear =
-            fFront > 0.95f;
+            front > 0.95f;
 
-        bool pathClear =
-            frontClear &&
-            Mathf.Min(fLeft, fRight) > 0.80f;
+        bool goalProgress =
+            goalDistance <
+            obstacleStartDistance - 0.12f;
 
-        bool wallDisappeared =
-            sideDistance > 1.15f &&
-            diagonalDistance > 0.95f;
-
-        if (goalAligned && pathClear)
+        // The path towards the goal must be clear
+        // over multiple consecutive observations.
+        if (goalAligned && frontClear && goalProgress)
             clearTicks++;
         else
             clearTicks = 0;
 
-        // Require several consecutive clear observations.
-        if (wallTicks >= MIN_WALL_TICKS &&
+        // Also detect when the boundary ends naturally.
+        bool boundaryEnded =
+            sideDistance > 1.20f &&
+            diagonalDistance > 1.00f &&
+            front > 1.00f &&
+            goalAligned;
+
+        if (wallTicks >= MIN_WALL_TIME &&
             (clearTicks >= CLEAR_REQUIRED ||
-             (wallDisappeared && goalAligned)))
+             boundaryEnded))
         {
-            state = GOAL_SEEKING;
+            state = SEEK;
 
             wallTicks = 0;
             clearTicks = 0;
             stuckTicks = 0;
+
+            bestDistance = goalDistance;
 
             previousTurn = 0f;
 
@@ -513,9 +564,9 @@ public class LLM_ChatGPT_4_FB : IRoverController
         );
     }
 
-    // ------------------------------------------------
-    // MAIN CONTROLLER
-    // ------------------------------------------------
+    // -------------------------------------------------
+    // MAIN DECISION
+    // -------------------------------------------------
 
     public (float speed01, float turn) Decide(Observation obs)
     {
@@ -524,35 +575,35 @@ public class LLM_ChatGPT_4_FB : IRoverController
         if (escapeCooldown > 0)
             escapeCooldown--;
 
-        // 1. Read all sensors.
-        fFront = ReadSensor(
+        // 1. Read sensors.
+        front = ReadSensor(
             obs.front,
-            ref fFront,
-            ref cFront
+            ref front,
+            ref frontClear
         );
 
-        fLeft = ReadSensor(
+        left = ReadSensor(
             obs.left,
-            ref fLeft,
-            ref cLeft
+            ref left,
+            ref leftClear
         );
 
-        fRight = ReadSensor(
+        right = ReadSensor(
             obs.right,
-            ref fRight,
-            ref cRight
+            ref right,
+            ref rightClear
         );
 
-        fLeftSide = ReadSensor(
+        leftSide = ReadSensor(
             obs.leftSide,
-            ref fLeftSide,
-            ref cLeftSide
+            ref leftSide,
+            ref leftSideClear
         );
 
-        fRightSide = ReadSensor(
+        rightSide = ReadSensor(
             obs.rightSide,
-            ref fRightSide,
-            ref cRightSide
+            ref rightSide,
+            ref rightSideClear
         );
 
         float goalDistance =
@@ -565,59 +616,72 @@ public class LLM_ChatGPT_4_FB : IRoverController
                 180f
             );
 
-        // 2. Stop once inside the goal area.
-        if (goalDistance < 0.18f)
+        // 2. Goal reached.
+        if (goalDistance < 0.15f)
             return (0f, 0f);
 
-        // 3. Progress monitoring.
-        if (state != ESCAPE &&
-            IsStuck(goalDistance))
+        // 3. Monitor progress.
+        if (state != ESCAPE_TURN &&
+            state != ESCAPE_MOVE &&
+            CheckProgress(goalDistance))
         {
             StartEscape();
         }
 
-        // 4. Escape state.
-        if (state == ESCAPE)
-        {
-            return Escape();
-        }
+        // 4. Escape manoeuvre.
+        if (state == ESCAPE_TURN)
+            return EscapeTurn();
 
-        // 5. Detect obstacles.
+        if (state == ESCAPE_MOVE)
+            return EscapeMove(goalAngle);
+
+        // 5. Detect nearby obstacles.
         bool frontBlocked =
-            fFront < FRONT_TRIGGER;
+            front < FRONT_TRIGGER;
 
         bool leftBlocked =
-            fLeft < 0.52f ||
-            fLeftSide < 0.32f;
+            left < 0.55f ||
+            leftSide < 0.32f;
 
         bool rightBlocked =
-            fRight < 0.52f ||
-            fRightSide < 0.32f;
+            right < 0.55f ||
+            rightSide < 0.32f;
 
-        // 6. Enter wall-following only once.
-        if (state == GOAL_SEEKING &&
+        // 6. Enter boundary following.
+        if (state == SEEK &&
             (frontBlocked || leftBlocked || rightBlocked))
         {
-            state = WALL_FOLLOWING;
+            state = FOLLOW;
 
             wallTicks = 0;
             clearTicks = 0;
 
-            // Choose the wall opposite the open direction.
-            if (GetLeftSpace() > GetRightSpace() + 0.10f)
+            obstacleStartDistance = goalDistance;
+
+            // Select the boundary opposite the open side.
+            if (LeftSpace() > RightSpace() + 0.10f)
+            {
                 wallSide = 1;
-            else if (GetRightSpace() > GetLeftSpace() + 0.10f)
+            }
+            else if (RightSpace() > LeftSpace() + 0.10f)
+            {
                 wallSide = -1;
+            }
             else
+            {
                 wallSide = goalAngle >= 0f ? -1 : 1;
+            }
 
             previousTurn = 0f;
         }
 
-        // 7. Execute current navigation state.
-        if (state == WALL_FOLLOWING)
+        // 7. Run current navigation state.
+        if (state == FOLLOW)
         {
-            return FollowWall(goalAngle);
+            return FollowBoundary(
+                goalAngle,
+                goalDistance
+            );
         }
 
         return SeekGoal(goalAngle);

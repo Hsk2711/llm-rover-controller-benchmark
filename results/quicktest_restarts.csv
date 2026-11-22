@@ -19,3 +19,7 @@ date,controller,restarts,seconds,outcome,report
 2026-11-22 13:40:28,LLM_ChatGPT_4_OS,0,60,ok,"Test report: 2/10 reached the goal, 1 collisions, 7 timeouts (got stuck), 0 runtime errors. Most common failure: gets stuck in a dead end."
 2026-11-22 14:11:16,LLM_ChatGPT_4_FB,0,62,ok,"Test report: 2/10 reached the goal, 0 collisions, 8 timeouts (got stuck), 0 runtime errors. Most common failure: gets stuck oscillating."
 2026-11-22 14:15:55,LLM_ChatGPT_4_FB,0,61,ok,"Test report: 2/10 reached the goal, 0 collisions, 8 timeouts (got stuck), 0 runtime errors. Most common failure: gets stuck in a dead end."
+2026-11-22 14:28:57,LLM_ChatGPT_4_FB,5,302,failed,
+2026-11-22 14:33:55,LLM_ChatGPT_4_FB,5,294,failed,
+2026-11-22 14:36:22,LLM_ChatGPT_2_OS,0,53,ok,"Test report: 9/10 reached the goal, 1 collisions, 0 timeouts (got stuck), 0 runtime errors. Most common failure: hits obstacles head-on."
+2026-11-22 14:37:33,LLM_ChatGPT_4_FB,0,67,ok,"Test report: 2/10 reached the goal, 0 collisions, 8 timeouts (got stuck), 0 runtime errors. Most common failure: gets stuck in a dead end."
