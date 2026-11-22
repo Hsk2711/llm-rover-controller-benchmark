@@ -374,3 +374,7 @@ Checklist of project phases. Update at the end of each phase.
 ### Gemini attempt 3 - feedback round 3 (final)
 - Round 3 compiles (class renamed only); Name "LLM_Controller". Quick Test 7/10 (0 collisions, 3 timeouts, oscillating). FINAL FB result = 7/10 (last-round rule; same as the one-shot).
   Scores: OS 7, r1 7, r2 5, r3 7. All files in `LLM_History/`. Attempt closed. model_version, human_minutes still to fill.
+
+### Claude attempt 3 - one-shot (OS)
+- LLM_Claude_3_OS.cs saved (class and constructor renamed), compiles. Name property "LLM_Controller" (untouched). Quick Test 8/10 (2 collisions, 0 timeouts, head-on) via run_quicktest.py (0 restarts).
+  Attempt open (0 of 3 rounds used). model_version, human_minutes still to fill.

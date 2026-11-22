@@ -1,0 +1,14 @@
+Test report: 8/10 reached the goal, 2 collisions, 0 timeouts (got stuck), 0 runtime errors. Most common failure: hits obstacles head-on.
+
+controller: LLM_Claude_3_OS   (practice map seeds 2000-2009, noise 0.05, trial seeds 1-10)
+map_seed trial_seed outcome time_s exceptions failure_label
+2000 1 Goal 29.5 0 none
+2001 2 Goal 23.2 0 none
+2002 3 Collision 39.1 0 hits obstacles head-on
+2003 4 Goal 29.9 0 none
+2004 5 Goal 39.5 0 none
+2005 6 Goal 20.8 0 none
+2006 7 Goal 27.3 0 none
+2007 8 Goal 27.0 0 none
+2008 9 Goal 23.7 0 none
+2009 10 Collision 7.3 0 hits obstacles head-on
