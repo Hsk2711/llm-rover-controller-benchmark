@@ -2,7 +2,7 @@
 using System;
 using UnityEngine;
 
-public class LLM_ChatGPT_5_FB : IRoverController
+public class LLM_ChatGPT_5_FB_excluded : IRoverController
 {
     public string Name => "Rover V6 Adaptive Navigation";
 

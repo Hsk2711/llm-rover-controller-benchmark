@@ -403,3 +403,12 @@ Checklist of project phases. Update at the end of each phase.
 ### ChatGPT attempt 5 - feedback round 3 (final)
 - Round 3 compiles (class renamed only); Name "Rover V6 Adaptive Navigation". Quick Test 1/10 (0 collisions, 9 timeouts, oscillating). FINAL FB result = 1/10 (last-round rule).
   Scores: OS 2, r1 2, r2 2, r3 1. All files in `LLM_History/`. Attempt closed. model_version, human_minutes still to fill. (Message had only the code; taken as round 3.)
+
+### ChatGPT attempt 5 EXCLUDED (protocol deviation, 2026-11-22)
+- After round 2, ChatGPT's question widget sent a non-standard message ("Rover V4 observation: left_right. Actuator limits: unknown.") instead of the test report, and ChatGPT produced 5 code versions
+  in total (V1, V2, V3, V5, V6), more than the protocol allows. The whole attempt is excluded; the replacement is ChatGPT attempt 6.
+- Versions that reached the project: OS = V1 ("Adaptive Rover Navigation"), r1 = V2 ("Persistent Bug Navigation V2"), r2 = V3 ("Rover Navigation V3"), r3 = V6 ("Rover V6 Adaptive Navigation"). V5 was never received here.
+  (The three code-only messages had been taken as rounds 1-3; the names match V2, V3, V6.)
+- Moved: Assets/Scripts/Controllers/LLM/Excluded/ChatGPT_5/LLM_ChatGPT_5_OS_excluded.cs and LLM_ChatGPT_5_FB_excluded.cs (= r3), class renamed to match (registry kind Excluded, ignored by runner);
+  LLM_History/Excluded/ChatGPT_5/ holds OS and r1-r3 unedited (kept outside Assets so duplicate class names do not compile); quick-test details renamed *_excluded.txt. Log row marked X2 "excluded".
+- Numbering: the replacement is called attempt 6 as requested; valid ChatGPT attempts are therefore 1, 2, 3, 4, 6 (the earlier rule numbered valid attempts 1-5; say if 6 should be renamed to 5).

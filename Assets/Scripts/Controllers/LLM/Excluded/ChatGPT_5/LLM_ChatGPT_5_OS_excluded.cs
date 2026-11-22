@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-public class LLM_ChatGPT_5_OS : IRoverController
+public class LLM_ChatGPT_5_OS_excluded : IRoverController
 {
     public string Name => "Adaptive Rover Navigation";
 
