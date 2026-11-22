@@ -16,13 +16,15 @@ public class LLM_Gemini_3_FB : IRoverController
         SeekGoal,
         FollowWallLeft,
         FollowWallRight,
-        EscapeTurn
+        CommittedTurn
     }
 
     private NavMode _mode;
     private int _modeTicks;
-    private int _escapeSign;     // +1 = left, -1 = right
-    private int _wallFlipCount;  // tracks how often we've switched wall side on this obstacle/run
+    private int _clearGoalTicks;
+    private int _commitSign;          // +1 = left, -1 = right
+    private int _commitTicksLeft;
+    private int _wallFlipCount;
     private int _totalTicks;
 
     private float _bestGoalDist;
@@ -47,7 +49,9 @@ public class LLM_Gemini_3_FB : IRoverController
     {
         _mode = NavMode.SeekGoal;
         _modeTicks = 0;
-        _escapeSign = 1;
+        _clearGoalTicks = 0;
+        _commitSign = 1;
+        _commitTicksLeft = 0;
         _wallFlipCount = 0;
         _totalTicks = 0;
 
@@ -99,74 +103,83 @@ public class LLM_Gemini_3_FB : IRoverController
 
         if (goalDist < 0.10f)
         {
-            float settleTurn = Mathf.Clamp(goalAngle / 35.0f, -0.4f, 0.4f);
-            _prevTurnCmd = settleTurn;
-            return (0.15f, settleTurn);
+            float settleTurn = Mathf.Clamp(goalAngle / 40.0f, -0.35f, 0.35f);
+            float smoothedSettle = Mathf.Lerp(_prevTurnCmd, settleTurn, 0.5f);
+            _prevTurnCmd = smoothedSettle;
+            return (0.15f, smoothedSettle);
         }
 
         float minForwardCone = Mathf.Min(front, Mathf.Min(left, right));
-        bool blockedAhead = front < 0.44f || minForwardCone < 0.31f;
-        bool tightPocket = blockedAhead && left < 0.56f && right < 0.56f;
+        bool blockedAhead = front < 0.46f || minForwardCone < 0.32f;
+        bool tightPocket = blockedAhead && left < 0.58f && right < 0.58f;
 
-        // Detect back-and-forth steering oscillation when not making steady progress
-        if (_oscillationScore >= 8 && _ticksWithoutProgress > 40 && _mode != NavMode.EscapeTurn)
+        // Track consecutive ticks where the direct line toward the goal looks open
+        if (IsGoalPathClear(goalAngle, front, left, right, leftSide, rightSide))
+            _clearGoalTicks++;
+        else
+            _clearGoalTicks = 0;
+
+        // State transitions with hysteresis to eliminate chatter and oscillation
+        if (_mode == NavMode.CommittedTurn)
         {
-            _escapeSign = ChooseEscapeDirection(goalAngle, left, right, leftSide, rightSide);
-            _mode = NavMode.EscapeTurn;
-            _modeTicks = 0;
-            _oscillationScore = 0;
-        }
-        else if (tightPocket && _mode != NavMode.EscapeTurn)
-        {
-            _escapeSign = ChooseEscapeDirection(goalAngle, left, right, leftSide, rightSide);
-            _mode = NavMode.EscapeTurn;
-            _modeTicks = 0;
-            _oscillationScore = 0;
-        }
-        else if (_mode == NavMode.EscapeTurn)
-        {
-            // Stay in escape turn long enough to clear a U-turn / pocket cleanly (~1.6s min, up to 3.0s)
-            bool clearedPocket = _modeTicks >= 32 && front > 0.72f &&
-                                 ((_escapeSign > 0 && left > 0.62f) || (_escapeSign < 0 && right > 0.62f));
-            if (clearedPocket || _modeTicks >= 60)
+            _commitTicksLeft--;
+
+            bool pathOpenedEarly = _modeTicks >= 20 &&
+                                   front > 0.85f &&
+                                   left > 0.62f &&
+                                   right > 0.62f;
+
+            if (pathOpenedEarly || _commitTicksLeft <= 0)
             {
-                _mode = (_escapeSign > 0) ? NavMode.FollowWallRight : NavMode.FollowWallLeft;
+                // Transition smoothly into wall-following on the opposite side of the turn
+                // so we hug the obstacle boundary rather than swinging back into it
+                _mode = (_commitSign > 0) ? NavMode.FollowWallRight : NavMode.FollowWallLeft;
                 _modeTicks = 0;
+                _clearGoalTicks = 0;
                 _ticksWithoutProgress = 0;
                 _lastProgressGoalDist = goalDist;
+                _oscillationScore = 0;
             }
+        }
+        else if (tightPocket || (_oscillationScore >= 7 && _ticksWithoutProgress >= 30))
+        {
+            StartCommittedTurn(
+                sign: ChooseCommittedDirection(goalAngle, left, right, leftSide, rightSide),
+                ticks: tightPocket ? 46 : 36
+            );
         }
         else if (_mode == NavMode.SeekGoal)
         {
-            // Require a few ticks in SeekGoal before re-entering wall follow to prevent edge chatter
-            if (blockedAhead && _modeTicks >= 6)
+            if (blockedAhead && _modeTicks >= 8)
             {
-                bool preferLeft = ChooseWallFollowLeft(goalAngle, left, right, leftSide, rightSide);
-                _mode = preferLeft ? NavMode.FollowWallLeft : NavMode.FollowWallRight;
+                bool followLeft = ChooseWallFollowLeft(goalAngle, left, right, leftSide, rightSide);
+                _mode = followLeft ? NavMode.FollowWallLeft : NavMode.FollowWallRight;
                 _modeTicks = 0;
+                _clearGoalTicks = 0;
             }
         }
         else // FollowWallLeft or FollowWallRight
         {
-            // Hold wall-following for at least 55 ticks (2.75s) so we round obstacles rather than bouncing off edges
-            bool minDwellMet = _modeTicks >= 55;
-            bool goalClear = IsGoalPathClear(goalAngle, front, left, right, leftSide, rightSide);
-            bool realProgress = goalDist + 0.18f < _lastProgressGoalDist;
+            // Require both a minimum dwell time and sustained clear path before resuming SeekGoal
+            bool minDwellMet = _modeTicks >= 60;
+            bool sustainedClear = _clearGoalTicks >= 8;
+            bool progressed = goalDist + 0.16f < _lastProgressGoalDist;
 
-            if (minDwellMet && goalClear && (!blockedAhead || _modeTicks >= 95) && (realProgress || _modeTicks >= 80))
+            if (minDwellMet && sustainedClear && !blockedAhead && (progressed || _modeTicks >= 95))
             {
                 _mode = NavMode.SeekGoal;
                 _modeTicks = 0;
+                _clearGoalTicks = 0;
                 _wallFlipCount = 0;
             }
-            else if (_ticksWithoutProgress >= 150)
+            else if (_ticksWithoutProgress >= 140)
             {
-                // Stuck along a wall/loop: if we haven't flipped yet, switch sides; otherwise do an escape pivot
-                if (_wallFlipCount < 2)
+                if (_wallFlipCount < 1)
                 {
                     _wallFlipCount++;
                     _mode = (_mode == NavMode.FollowWallLeft) ? NavMode.FollowWallRight : NavMode.FollowWallLeft;
                     _modeTicks = 0;
+                    _clearGoalTicks = 0;
                     _ticksWithoutProgress = 0;
                     _lastProgressGoalDist = goalDist;
                     _oscillationScore = 0;
@@ -174,12 +187,10 @@ public class LLM_Gemini_3_FB : IRoverController
                 else
                 {
                     _wallFlipCount = 0;
-                    _escapeSign = ChooseEscapeDirection(goalAngle, left, right, leftSide, rightSide);
-                    _mode = NavMode.EscapeTurn;
-                    _modeTicks = 0;
-                    _ticksWithoutProgress = 0;
-                    _lastProgressGoalDist = goalDist;
-                    _oscillationScore = 0;
+                    StartCommittedTurn(
+                        sign: ChooseCommittedDirection(goalAngle, left, right, leftSide, rightSide),
+                        ticks: 48
+                    );
                 }
             }
         }
@@ -189,8 +200,8 @@ public class LLM_Gemini_3_FB : IRoverController
 
         switch (_mode)
         {
-            case NavMode.EscapeTurn:
-                (speed01, rawTurn) = ComputeEscapeCommand(front, left, right);
+            case NavMode.CommittedTurn:
+                (speed01, rawTurn) = ComputeCommittedTurnCommand(front, left, right);
                 break;
 
             case NavMode.FollowWallLeft:
@@ -221,9 +232,9 @@ public class LLM_Gemini_3_FB : IRoverController
                 break;
         }
 
-        // Smooth turn command to dampen sensor jitter and prevent steering oscillation
-        float smoothAlpha = (_mode == NavMode.EscapeTurn) ? 0.85f : 0.55f;
-        float turn = Mathf.Lerp(_prevTurnCmd, rawTurn, smoothAlpha);
+        // Low-pass filter on turn command dampens high-frequency sensor noise
+        float alpha = (_mode == NavMode.CommittedTurn) ? 0.75f : 0.45f;
+        float turn = Mathf.Lerp(_prevTurnCmd, rawTurn, alpha);
 
         TrackSteeringOscillation(turn);
         _prevTurnCmd = turn;
@@ -235,6 +246,18 @@ public class LLM_Gemini_3_FB : IRoverController
         return (speed01, turn);
     }
 
+    private void StartCommittedTurn(int sign, int ticks)
+    {
+        _mode = NavMode.CommittedTurn;
+        _modeTicks = 0;
+        _commitSign = (sign >= 0) ? 1 : -1;
+        _commitTicksLeft = ticks;
+        _ticksWithoutProgress = 0;
+        _lastProgressGoalDist = _prevGoalDist;
+        _oscillationScore = 0;
+        _clearGoalTicks = 0;
+    }
+
     private bool ChooseWallFollowLeft(
         float goalAngle,
         float left,
@@ -242,33 +265,36 @@ public class LLM_Gemini_3_FB : IRoverController
         float leftSide,
         float rightSide)
     {
-        float leftScore = left + 0.5f * leftSide + (goalAngle > 15.0f ? 0.25f : 0.0f);
-        float rightScore = right + 0.5f * rightSide + (goalAngle < -15.0f ? 0.25f : 0.0f);
+        float leftSpace = left + 0.5f * leftSide;
+        float rightSpace = right + 0.5f * rightSide;
 
-        if (Mathf.Abs(leftScore - rightScore) > 0.12f)
-            return leftScore > rightScore;
+        // Strong preference toward whichever side has noticeably more clearance
+        if (Mathf.Abs(leftSpace - rightSpace) > 0.16f)
+            return leftSpace > rightSpace;
 
-        // Tie-breaker: turn toward goal sign
-        return goalAngle >= 0.0f;
+        if (Mathf.Abs(goalAngle) > 25.0f)
+            return goalAngle >= 0.0f;
+
+        return (_wallFlipCount % 2 == 0);
     }
 
-    private int ChooseEscapeDirection(
+    private int ChooseCommittedDirection(
         float goalAngle,
         float left,
         float right,
         float leftSide,
         float rightSide)
     {
-        float leftOpen = left + 0.6f * leftSide;
-        float rightOpen = right + 0.6f * rightSide;
+        float leftSpace = left + 0.65f * leftSide;
+        float rightSpace = right + 0.65f * rightSide;
 
-        if (Mathf.Abs(leftOpen - rightOpen) > 0.10f)
-            return (leftOpen > rightOpen) ? 1 : -1;
+        if (Mathf.Abs(leftSpace - rightSpace) > 0.12f)
+            return (leftSpace > rightSpace) ? 1 : -1;
 
-        if (Mathf.Abs(goalAngle) > 20.0f)
+        if (Mathf.Abs(goalAngle) > 30.0f)
             return (goalAngle >= 0.0f) ? 1 : -1;
 
-        return (_totalTicks % 2 == 0) ? 1 : -1;
+        return (_wallFlipCount % 2 == 0) ? 1 : -1;
     }
 
     private (float speed01, float turn) ComputeSeekGoalCommand(
@@ -279,19 +305,20 @@ public class LLM_Gemini_3_FB : IRoverController
         float leftSide,
         float rightSide)
     {
-        // Deadband around 0 deg prevents tiny left/right wiggle when aligned with the goal
-        float effectiveAngle = (Mathf.Abs(goalAngle) < 4.0f) ? 0.0f : goalAngle;
-        float goalTurn = effectiveAngle / 45.0f;
+        // Deadband prevents tiny left/right hunting when roughly pointed at the goal
+        float effectiveAngle = (Mathf.Abs(goalAngle) < 5.0f) ? 0.0f : goalAngle;
+        float goalTurn = effectiveAngle / 48.0f;
 
+        // Only apply lateral bias when an obstacle is genuinely close so we don't fight goalAngle early
         float avoidanceBias = 0.0f;
-        if (left < 0.50f)
-            avoidanceBias -= (0.50f - left) * 1.3f;
-        if (right < 0.50f)
-            avoidanceBias += (0.50f - right) * 1.3f;
-        if (leftSide < 0.24f)
-            avoidanceBias -= (0.24f - leftSide) * 1.0f;
-        if (rightSide < 0.24f)
-            avoidanceBias += (0.24f - rightSide) * 1.0f;
+        if (left < 0.42f)
+            avoidanceBias -= (0.42f - left) * 1.1f;
+        if (right < 0.42f)
+            avoidanceBias += (0.42f - right) * 1.1f;
+        if (leftSide < 0.22f)
+            avoidanceBias -= (0.22f - leftSide) * 0.9f;
+        if (rightSide < 0.22f)
+            avoidanceBias += (0.22f - rightSide) * 0.9f;
 
         float turn = Mathf.Clamp(goalTurn + avoidanceBias, -1.0f, 1.0f);
 
@@ -317,43 +344,44 @@ public class LLM_Gemini_3_FB : IRoverController
         float awayWallSign = -towardWallSign;
 
         const float desiredSideDist = 0.35f;
-        const float deadband = 0.04f;
+        const float deadband = 0.05f;
         float turn = 0.0f;
-        float speed01 = 0.68f;
+        float speed01 = 0.65f;
 
         if (front < 0.56f || diagAhead < 0.46f)
         {
             float urgency = Mathf.Clamp01(1.0f - Mathf.Min(front / 0.56f, diagAhead / 0.46f));
-            turn = awayWallSign * Mathf.Lerp(0.45f, 0.95f, urgency);
-            speed01 = Mathf.Lerp(0.55f, 0.22f, urgency);
+            turn = awayWallSign * Mathf.Lerp(0.42f, 0.90f, urgency);
+            speed01 = Mathf.Lerp(0.52f, 0.22f, urgency);
         }
-        else if (sideWall < 1.30f)
+        else if (sideWall < 1.45f)
         {
             float error = sideWall - desiredSideDist;
             if (Mathf.Abs(error) < deadband)
                 error = 0.0f;
-            turn = Mathf.Clamp(towardWallSign * (error * 1.8f), -0.55f, 0.55f);
-            speed01 = 0.72f;
+            turn = Mathf.Clamp(towardWallSign * (error * 1.5f), -0.45f, 0.45f);
+            speed01 = 0.70f;
         }
         else
         {
-            // Gentle curve back toward wall when outer corner is passed
-            turn = towardWallSign * 0.32f;
-            speed01 = 0.65f;
+            // Gentle steady curve toward wall when rounding an outer corner so sideWall doesn't cycle
+            turn = towardWallSign * 0.22f;
+            speed01 = 0.62f;
         }
 
         if (oppositeSideWall < 0.22f)
-            turn += towardWallSign * ((0.22f - oppositeSideWall) * 1.2f);
+            turn += towardWallSign * ((0.22f - oppositeSideWall) * 1.0f);
         if (diagOpposite < 0.26f)
-            turn += towardWallSign * ((0.26f - diagOpposite) * 1.1f);
+            turn += towardWallSign * ((0.26f - diagOpposite) * 1.0f);
 
         return (speed01, Mathf.Clamp(turn, -1.0f, 1.0f));
     }
 
-    private (float speed01, float turn) ComputeEscapeCommand(float front, float left, float right)
+    private (float speed01, float turn) ComputeCommittedTurnCommand(float front, float left, float right)
     {
-        float turn = _escapeSign * 0.95f;
-        float speed01 = (front > 0.50f && left > 0.40f && right > 0.40f) ? 0.20f : 0.0f;
+        float turn = _commitSign * 0.90f;
+        bool safeToCreep = front > 0.55f && left > 0.42f && right > 0.42f;
+        float speed01 = safeToCreep ? 0.22f : 0.0f;
         return (speed01, turn);
     }
 
@@ -394,20 +422,20 @@ public class LLM_Gemini_3_FB : IRoverController
         float leftSide,
         float rightSide)
     {
-        if (Mathf.Abs(goalAngle) <= 20.0f)
-            return front > 0.75f && left > 0.52f && right > 0.52f;
+        if (Mathf.Abs(goalAngle) <= 18.0f)
+            return front > 0.80f && left > 0.58f && right > 0.58f;
 
-        if (goalAngle > 20.0f && goalAngle <= 65.0f)
-            return left > 0.75f && front > 0.52f;
+        if (goalAngle > 18.0f && goalAngle <= 60.0f)
+            return left > 0.80f && front > 0.58f;
 
-        if (goalAngle < -20.0f && goalAngle >= -65.0f)
-            return right > 0.75f && front > 0.52f;
+        if (goalAngle < -18.0f && goalAngle >= -60.0f)
+            return right > 0.80f && front > 0.58f;
 
-        if (goalAngle > 65.0f && goalAngle <= 110.0f)
-            return leftSide > 0.75f && left > 0.52f;
+        if (goalAngle > 60.0f && goalAngle <= 105.0f)
+            return leftSide > 0.80f && left > 0.58f;
 
-        if (goalAngle < -65.0f && goalAngle >= -110.0f)
-            return rightSide > 0.75f && right > 0.52f;
+        if (goalAngle < -60.0f && goalAngle >= -105.0f)
+            return rightSide > 0.80f && right > 0.58f;
 
         return false;
     }
@@ -415,8 +443,8 @@ public class LLM_Gemini_3_FB : IRoverController
     private void TrackSteeringOscillation(float turn)
     {
         int sign = 0;
-        if (turn > 0.12f) sign = 1;
-        else if (turn < -0.12f) sign = -1;
+        if (turn > 0.15f) sign = 1;
+        else if (turn < -0.15f) sign = -1;
 
         if (sign != 0 && _prevTurnSign != 0 && sign != _prevTurnSign)
         {
