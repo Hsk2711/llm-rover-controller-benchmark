@@ -460,3 +460,6 @@ Finish line: 0 feedback rounds, model Claude Opus 5.5 (incognito chat), human mi
 
 ### Gemini attempt 5 - one-shot
 Temporary chat. Class and constructor renamed to LLM_Gemini_5_OS, nothing else. Compiles. Name = "LLM_ReactiveWallGoalController". Quick Test 9/10 (0 restarts; 1 timeout, oscillating). Attempt open for feedback rounds.
+
+### Gemini attempt 5 - feedback round 1
+Class and constructor renamed to LLM_Gemini_5_FB, nothing else. Compiles. Name = "LLM_AntiOscillationController". Quick Test 7/10 (0 restarts; 3 timeouts, oscillating). One-shot was 9/10. Copy in LLM_History/LLM_Gemini_5_FB_r1.cs.
