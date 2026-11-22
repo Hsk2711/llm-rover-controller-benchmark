@@ -463,3 +463,6 @@ Temporary chat. Class and constructor renamed to LLM_Gemini_5_OS, nothing else. 
 
 ### Gemini attempt 5 - feedback round 1
 Class and constructor renamed to LLM_Gemini_5_FB, nothing else. Compiles. Name = "LLM_AntiOscillationController". Quick Test 7/10 (0 restarts; 3 timeouts, oscillating). One-shot was 9/10. Copy in LLM_History/LLM_Gemini_5_FB_r1.cs.
+
+### Gemini attempt 5 - feedback round 2
+Class and constructor renamed to LLM_Gemini_5_FB, nothing else; replaced the round-1 FB file. Compiles. Name = "LLM_StableWallGoalController". Quick Test 6/10 (0 restarts; 4 timeouts, oscillating). Copy in LLM_History/LLM_Gemini_5_FB_r2.cs.
