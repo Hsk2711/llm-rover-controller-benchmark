@@ -412,3 +412,7 @@ Checklist of project phases. Update at the end of each phase.
 - Moved: Assets/Scripts/Controllers/LLM/Excluded/ChatGPT_5/LLM_ChatGPT_5_OS_excluded.cs and LLM_ChatGPT_5_FB_excluded.cs (= r3), class renamed to match (registry kind Excluded, ignored by runner);
   LLM_History/Excluded/ChatGPT_5/ holds OS and r1-r3 unedited (kept outside Assets so duplicate class names do not compile); quick-test details renamed *_excluded.txt. Log row marked X2 "excluded".
 - Numbering: the replacement is called attempt 6 as requested; valid ChatGPT attempts are therefore 1, 2, 3, 4, 6 (the earlier rule numbered valid attempts 1-5; say if 6 should be renamed to 5).
+
+### ChatGPT attempt 6 - one-shot (OS) (replacement for excluded attempt 5)
+- LLM_ChatGPT_6_OS.cs saved (class renamed only), compiles. Name property "Adaptive Rover Navigation". Quick Test 3/10 (0 collisions, 7 timeouts, oscillating) via run_quicktest.py (0 restarts).
+  Attempt open (0 of 3 rounds used). model_version, human_minutes still to fill.
