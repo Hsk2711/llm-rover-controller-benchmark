@@ -323,3 +323,7 @@ Checklist of project phases. Update at the end of each phase.
 ### Gemini attempt 2 - feedback round 2
 - Round 2 compiles (class renamed only); Name "LLM_Controller". Quick Test 3/10 (0 collisions, 7 timeouts, oscillating). Scores: OS 8, r1 8, r2 3.
   Current FB result (last-round rule) 3/10. File `LLM_History/LLM_Gemini_2_FB_r2.cs`. 2 of 3 rounds used.
+
+### Gemini attempt 2 - feedback round 3 (final)
+- Round 3 compiles (class renamed only); Name "LLM_Controller". Quick Test 6/10 (0 collisions, 4 timeouts, oscillating). FINAL FB result = 6/10 (last-round rule; the one-shot was 8/10).
+  Scores: OS 8, r1 8, r2 3, r3 6. All files in `LLM_History/`. Attempt closed (3 of 3 rounds used). model_version, human_minutes still to fill.
