@@ -339,3 +339,7 @@ Checklist of project phases. Update at the end of each phase.
 - Stall episode (for the Phase 7 review): the Editor process had been restarted; for ~15 min every driver run failed (3 runs x 5 restarts, RuleBased too) although a plain
   `editor.playmode start` and a hand-started Quick Test worked in the same Editor, and later the driver itself worked with 0 restarts. So these were not controller-related;
   recorded as outcome "failed" rows in results/quicktest_restarts.csv. Idea for the overnight runner: a longer restart budget with back-off, and a pre-warm Play entry after every Editor start.
+
+### ChatGPT attempt 4 - feedback round 1
+- Round 1 compiles (class renamed only); Name "Adaptive Dead-End Recovery Rover". Quick Test 2/10 (0 collisions, 8 timeouts, oscillating). OS was 2/10. Current FB result (last-round rule) 2/10.
+  1 of 3 rounds used. File `LLM_History/LLM_ChatGPT_4_FB_r1.cs`.
