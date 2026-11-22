@@ -24,3 +24,4 @@ date,controller,restarts,seconds,outcome,report
 2026-11-22 14:36:22,LLM_ChatGPT_2_OS,0,53,ok,"Test report: 9/10 reached the goal, 1 collisions, 0 timeouts (got stuck), 0 runtime errors. Most common failure: hits obstacles head-on."
 2026-11-22 14:37:33,LLM_ChatGPT_4_FB,0,67,ok,"Test report: 2/10 reached the goal, 0 collisions, 8 timeouts (got stuck), 0 runtime errors. Most common failure: gets stuck in a dead end."
 2026-11-22 14:44:45,LLM_Gemini_3_OS,0,63,ok,"Test report: 7/10 reached the goal, 0 collisions, 3 timeouts (got stuck), 0 runtime errors. Most common failure: gets stuck oscillating."
+2026-11-22 14:50:10,LLM_Gemini_3_FB,0,68,ok,"Test report: 7/10 reached the goal, 0 collisions, 3 timeouts (got stuck), 0 runtime errors. Most common failure: gets stuck oscillating."

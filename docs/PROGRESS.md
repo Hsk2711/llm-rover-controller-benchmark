@@ -362,3 +362,7 @@ Checklist of project phases. Update at the end of each phase.
 ### Gemini attempt 3 - one-shot (OS)
 - LLM_Gemini_3_OS.cs saved (class renamed only), compiles. Name property "LLM_Controller" (untouched). Quick Test 7/10 (0 collisions, 3 timeouts, oscillating) via run_quicktest.py (0 restarts).
   Attempt open (0 of 3 rounds used). model_version, human_minutes still to fill.
+
+### Gemini attempt 3 - feedback round 1
+- Round 1 compiles (class renamed only); Name "LLM_Controller". Quick Test 7/10 (0 collisions, 3 timeouts, oscillating). OS was 7/10. Current FB result (last-round rule) 7/10.
+  1 of 3 rounds used. File `LLM_History/LLM_Gemini_3_FB_r1.cs`.
