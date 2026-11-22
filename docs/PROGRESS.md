@@ -478,3 +478,9 @@ Incognito chat. Class and constructor renamed to LLM_Claude_5_OS, nothing else. 
 
 ### Gemini attempt 5 - finish line (corrected)
 Finish line: 3 feedback rounds, model "Gemini, Auto mode, Temporary Chat, free plan", human minutes 3. Log row complete.
+
+### Claude attempt 5 - finished; log column model_label
+Finish line: 0 feedback rounds, model Claude Opus 5.5 (incognito chat), human minutes 3. Final FB = OS = 10/10. Log-only change: new last column model_label ("ChatGPT (GPT-6)", "Gemini (Auto mode)", "Claude Opus 5.5") for paper and figures; model_version unchanged. CLAUDE.md now carries the Phase 6 freeze rule.
+
+### OPEN ITEM for Phase 7
+Test end to end that the two no_compile one-shots (LLM_ChatGPT_1_OS, LLM_ChatGPT_3_OS, in LLM_NoCompile/) are recorded by the experiment runner as success=0, outcome "no_compile" in every trial (via ControllerRegistry.ExperimentEntries()), and that the Excluded/ files are ignored. Not tested yet. Also still open: Play-mode stall handling for the overnight runner.

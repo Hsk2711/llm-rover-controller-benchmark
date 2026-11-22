@@ -4,3 +4,6 @@ Column definitions for results/llm_generation_log.csv (kept here because a CSV h
   notes.
 - human_minutes = active human time per attempt, from opening the chatbot chat to the final code being saved,
   EXCLUDING time waiting for compile and Quick Test. Values entered after the fact are marked "estimated afterwards" in notes.
+- model_label (last column, added after the phase6-frozen tag; log-only change) = one clean label per chatbot for the paper and figures:
+  "ChatGPT (GPT-6)", "Gemini (Auto mode)", "Claude Opus 5.5". model_version keeps the detailed text as entered. It is the LAST column so that
+  tools that read the log by position (notes = column 10) keep working.
