@@ -382,3 +382,8 @@ Checklist of project phases. Update at the end of each phase.
 ### Claude attempt 3 - feedback round 1, closed at 10/10
 - Round 1 compiles (class and constructor renamed); Name "LLM_Controller". Quick Test 10/10 (0 collisions, 0 timeouts). Stop early at 10/10: FINAL FB result = 10/10, 1 feedback round used. OS was 8/10.
   File `LLM_History/LLM_Claude_3_FB_r1.cs`. model_version, human_minutes still to fill.
+
+### Reconstructed transcripts (2026-11-22)
+- Original chats not saved for Claude attempt 2 and ChatGPT attempt 4. `docs/llm_transcripts/Claude_2_reconstructed.txt` and `ChatGPT_4_reconstructed.txt` hold the frozen task text, every code version
+  from `LLM_History/` (byte for byte, as saved: class/constructor renamed) and the test report sent before each round (rebuilt from results/quicktest_restarts.csv; the exact typed text was not stored).
+  The chatbot's explanation text is not available. No code was changed.
