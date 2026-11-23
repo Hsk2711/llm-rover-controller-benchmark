@@ -41,7 +41,7 @@ def main():
 
     bad_neg, bad_time, bad_flag, bad_eff, bad_na = 0, 0, 0, 0, 0
     for d in data:
-        nc = d["outcome"] == "no_compile"
+        nc = d["outcome"] in ("no_compile", "hang")          # rows without a finished simulation: the simulation numbers are NA
         for f in NUM:
             v = d[f]
             if v == "NA":
@@ -64,7 +64,7 @@ def main():
     check(bad_eff == 0, "efficiency is in (0, 1] for every successful run")
     check(bad_na == 0, "NA only where a number does not exist")
 
-    nc = [d for d in data if d["outcome"] == "no_compile"]
+    nc = [d for d in data if d["outcome"] == "no_compile"]      # (hang rows are checked separately below)
     names = sorted(set(d["controller"] for d in nc))
     check(names == ["LLM_ChatGPT_1_OS", "LLM_ChatGPT_3_OS"], "no_compile rows exist for exactly the 2 files: %s" % names)
     per = a.maps * a.noises * a.seeds
@@ -72,7 +72,9 @@ def main():
     check(all(d["success"] == "0" and d["exceptions"] == "0" for d in nc), "no_compile rows: success 0")
     ctrl = sorted(set(d["controller"] for d in data))
     check(len(ctrl) == a.controllers, "%d different controllers" % len(ctrl))
-    sim = [d for d in data if d["outcome"] != "no_compile"]
+    hang = [d for d in data if d["outcome"] == "hang"]
+    check(all(d["success"] == "0" and d["collision"] == "0" and d["timeout"] == "0" for d in hang), "hang rows (%d): success 0" % len(hang))
+    sim = [d for d in data if d["outcome"] not in ("no_compile", "hang")]
     check(all(d["outcome"] in ("goal", "collision", "timeout") for d in sim), "outcomes of simulated rows are goal / collision / timeout")
     print("exceptions in simulated rows: %d rows with exceptions > 0" % sum(1 for d in sim if int(d["exceptions"]) > 0))
 

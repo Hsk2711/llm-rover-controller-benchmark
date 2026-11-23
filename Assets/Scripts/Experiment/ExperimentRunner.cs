@@ -84,7 +84,9 @@ public class ExperimentRunner : MonoBehaviour
     readonly Queue<Spec> queue = new Queue<Spec>();
     StreamWriter csv;
     FileStream csvStream;
-    int totalRuns, doneRuns, doneAtStart, simulatedThisSession;
+    int totalRuns, doneRuns, doneAtStart, simulatedThisSession, hangRows;
+    HashSet<string> hangKeys = new HashSet<string>();      // runs listed in results/hang_runs.txt (written by tools/run_experiment.py)
+    readonly HashSet<string> inflight = new HashSet<string>();   // runs started and not finished: results/inflight.txt (the watchdog reads it after a hang)
     float sessionStart, lastProgress;
 
     void Start() { StartCoroutine(Main()); }
@@ -147,6 +149,7 @@ public class ExperimentRunner : MonoBehaviour
 
         // ---------- the complete run list, and what is already done (RESUME) ----------
         var done = ReadDone(csvPath);
+        hangKeys = ReadHangKeys();
         var all = new List<Spec>();
         foreach (int m in mapIdx)
             for (int n = 0; n < noises.Length; n++)
@@ -162,6 +165,7 @@ public class ExperimentRunner : MonoBehaviour
         {
             if (done.Contains(Key(sp))) { doneRuns++; continue; }
             if (!entries[sp.entry].compiles) { WriteRow(NoCompileRow(sp)); doneRuns++; continue; }   // no simulation
+            if (hangKeys.Contains(Key(sp))) { WriteRow(HangRow(sp)); doneRuns++; hangRows++; continue; }   // the watchdog found that this run hangs the program
             todo.Add(sp);
         }
         doneAtStart = doneRuns;
@@ -347,6 +351,29 @@ public class ExperimentRunner : MonoBehaviour
                + F(noises[s.noiseIdx], "0.00") + "," + s.seed;
     }
 
+    // runs the watchdog declared "hang" (the program froze twice in a row on exactly this run): one key per line, controller|map|noise|seed
+    HashSet<string> ReadHangKeys()
+    {
+        var set = new HashSet<string>();
+        string f = Path.Combine(resultsDir, "hang_runs.txt");
+        if (File.Exists(f)) foreach (var line in File.ReadAllLines(f)) { string k = line.Trim(); if (k.Length > 0) set.Add(k); }
+        return set;
+    }
+
+    // row of a run that hangs the program: success 0, no collision, no timeout, outcome "hang"; the numbers that need a simulation are NA (like no_compile)
+    string HangRow(Spec s)
+    {
+        var map = maps[s.map];
+        var pose = TrialSpawner.ComputePose(s.seed, map.startZoneCentre, map.goalZoneCentre, runCfg);
+        float straight = DistanceToZone(pose.position, map.goalZoneCentre);
+        return RowStart(s) + ",0,0,0,0," + NA + "," + F(straight, "0.000") + "," + NA + "," + NA + "," + NA + ",hang";
+    }
+
+    void WriteInflight()
+    {
+        try { File.WriteAllText(Path.Combine(resultsDir, "inflight.txt"), string.Join("\n", inflight) + "\n"); } catch { }
+    }
+
     // straight_m of a no_compile row: distance from the start pose to the goal zone (needs no simulation, only the start pose)
     string NoCompileRow(Spec s)
     {
@@ -448,6 +475,7 @@ public class ExperimentRunner : MonoBehaviour
         if (queue.Count == 0) { a.busy = false; return; }
         var spec = queue.Dequeue();
         a.spec = spec;
+        inflight.Add(Key(spec)); WriteInflight();              // before anything else can freeze: the watchdog needs to know which run it was
         var map = maps[spec.map];
 
         a.host.enabled = false;                                // hold the old controller while everything is swapped
@@ -494,6 +522,7 @@ public class ExperimentRunner : MonoBehaviour
         a.host.enabled = false;
         a.drive.SetCommand(0f, 0f);
         a.busy = false;
+        inflight.Remove(Key(a.spec)); WriteInflight();
     }
 
     void SavePath(Arena a)

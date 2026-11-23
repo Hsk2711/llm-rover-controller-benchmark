@@ -1,0 +1,4 @@
+time,launch_no,reason,rows_in_csv,seconds_this_launch,exit_code,culprit_run
+2026-11-23 07:22:10,1,no new row for 6 s,3,8,killed,
+2026-11-23 07:22:18,2,no new row for 6 s,6,8,killed,LLM_Fake_1_OS|M4_Trap|0.05|7
+2026-11-23 07:22:27,3,"no new row for 6 s; HANG: run LLM_Fake_1_OS|M4_Trap|0.05|7 failed twice in a row -> recorded as success=0, outcome hang",9,8,killed,LLM_Fake_1_OS|M4_Trap|0.05|7

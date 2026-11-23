@@ -501,3 +501,9 @@ Test end to end that the two no_compile one-shots (LLM_ChatGPT_1_OS, LLM_ChatGPT
 
 ### OPEN ITEM (updated) - no_compile one-shots
 Checked in the quick data: LLM_ChatGPT_1_OS and LLM_ChatGPT_3_OS appear in every map/noise/seed with success 0, outcome `no_compile`; the Excluded files do not appear. Re-check on the full results file (`tools/check_results.py results/results.csv --seeds 30`).
+
+### Phase 7 step 1 addendum (2026-11-23): hang handling
+- The player writes the runs in progress to `results/inflight.txt`. After any watchdog failure the next launch uses ONE arena so the guilty run is known. Two failed launches in a row on the SAME run (controller|map|noise|seed) -> the run is appended to `results/hang_runs.txt`; the player writes it as success=0, collision=0, timeout=0, outcome `hang` (NA for path_m, efficiency, time_s, min_clear_cm; straight_m filled), without simulating, and normal arenas resume. An isolated launch that adds 20 rows without failing ends isolation (not a repeatable hang). `runner_restarts.csv` has a new column `culprit_run`.
+- `hang` rows are NOT counted as timeouts; analysis must count them as failures (success=0) and report how many there are.
+- Tests: stand-in player that freezes on one run (`results/runner_restarts_watchdog_test_hang.csv`): launch 1 stalled, launches 2 and 3 (1 arena) named the same run, run written as hang, launch 4 finished. Real player: a run listed in hang_runs.txt produced a correct `hang` row without simulation.
+- Player rebuilt; full quick re-run (`results/quick_rerun.csv`, 1,024 rows) is identical to `results/quick.csv` in every column. (That re-run's wall-clock time is meaningless: the laptop slept ~2 h. Speed figure stays ~96 runs/min from the first quick run.)
