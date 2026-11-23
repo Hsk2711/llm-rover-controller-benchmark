@@ -119,7 +119,7 @@ public class ControllerHost : MonoBehaviour
     /// and goal positions are set to zero, so LLM controllers get exactly the inputs of docs/llm_task_spec.txt.</summary>
     public static Observation Restrict(Observation obs, IRoverController controller)
     {
-        if (controller is Bug2Controller || controller is Bug2_Corrected) return obs;   // both Bug2 versions may know the positions
+        if (controller is Bug2Controller) return obs;
         obs.roverPos = obs.startPos = obs.goalPos = Vector2.zero;
         return obs;
     }

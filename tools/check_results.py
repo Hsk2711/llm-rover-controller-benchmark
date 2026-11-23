@@ -1,6 +1,6 @@
 """check_results.py - sanity checks of an experiment results file (results/quick.csv or results/results.csv).
 
-  python tools/check_results.py results/quick.csv --seeds 2         (expected rows = 33 controllers x 4 maps x 4 noises x seeds)
+  python tools/check_results.py results/quick.csv --seeds 2         (expected rows = 32 controllers x 4 maps x 4 noises x seeds)
   python tools/check_results.py results/results.csv --seeds 30
 Checks: header, exact row count, no duplicate (controller, map, noise, seed), no empty cell, no negative number, time_s <= 60,
 success + collision + timeout = 1 for simulated rows, efficiency <= 1, the no_compile rows (two files, all conditions) and the
@@ -17,7 +17,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("csv")
     ap.add_argument("--seeds", type=int, default=30)
-    ap.add_argument("--controllers", type=int, default=33)
+    ap.add_argument("--controllers", type=int, default=32)
     ap.add_argument("--maps", type=int, default=4)
     ap.add_argument("--noises", type=int, default=4)
     a = ap.parse_args()
@@ -81,7 +81,7 @@ def main():
     print("\nSuccess rate per family and map (all noise levels, no_compile rows included in LLM; counts = successes / runs):")
     maps = sorted(set(d["map"] for d in data))
     print("%-6s " % "family" + " ".join("%-18s" % m for m in maps) + " all maps")
-    for fam in ("Rule", "Bug2", "Bug2C", "LLM"):
+    for fam in ("Rule", "Bug2", "LLM"):
         cells = []
         tot_s = tot_n = 0
         for m in maps:
