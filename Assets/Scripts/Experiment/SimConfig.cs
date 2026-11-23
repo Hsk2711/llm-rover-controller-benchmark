@@ -37,6 +37,9 @@ public class SimConfig : ScriptableObject
     // reading = true * (1 + e), e ~ Normal(0, noise^2); one run uses one of these levels.
     public float[] noiseLevels = { 0f, 0.02f, 0.05f, 0.10f };
     public float dropoutProbability = 0.02f; // chance a reading is lost and returns maxRange
+    // Phase 8b stress test only (exploratory, never used by the main run): table that fixes the noise index of a level for the sensor seed.
+    // The first four entries are the study levels above (same indices), 0.20 and 0.30 are the stress levels.
+    public float[] extendedNoiseLevels = { 0f, 0.02f, 0.05f, 0.10f, 0.20f, 0.30f };
 
     [Header("Timing (seconds)")]
     public float controllerInterval = 0.05f; // controllers decide at 20 Hz

@@ -6,10 +6,13 @@ Checks: header, exact row count, no duplicate (controller, map, noise, seed), no
 success + collision + timeout = 1 for simulated rows, efficiency <= 1, the no_compile rows (two files, all conditions) and the
 success rate per family and map. "NA" is allowed only where a number does not exist (efficiency of a failed run; every number of a no_compile row).
 Exit code 0 = all checks passed.
+Stress file (Phase 8b):  python tools/check_results.py results/results_stress.csv --stress --seeds 30 --noises 3
+  = the same checks with the 19-column header (extra last column "dropout") and the three expected conditions (noise, dropout) =
+  (0.20, 0.02), (0.30, 0.02), (0.05, 0.10), each with controllers x maps x seeds rows.
 """
 import argparse, csv, collections, sys
 
-HEADER = "controller,family,model_label,attempt,condition,map,noise,seed,success,collision,timeout,exceptions,path_m,straight_m,efficiency,time_s,min_clear_cm,outcome".split(",")
+HEADER_MAIN = "controller,family,model_label,attempt,condition,map,noise,seed,success,collision,timeout,exceptions,path_m,straight_m,efficiency,time_s,min_clear_cm,outcome".split(",")
 NUM = ["noise", "seed", "success", "collision", "timeout", "exceptions", "path_m", "straight_m", "efficiency", "time_s", "min_clear_cm"]
 
 
@@ -20,7 +23,9 @@ def main():
     ap.add_argument("--controllers", type=int, default=32)
     ap.add_argument("--maps", type=int, default=4)
     ap.add_argument("--noises", type=int, default=4)
+    ap.add_argument("--stress", action="store_true", help="results_stress.csv: 19 columns (dropout), three (noise, dropout) conditions")
     a = ap.parse_args()
+    HEADER = HEADER_MAIN + (["dropout"] if a.stress else [])
     rows = list(csv.reader(open(a.csv, newline="", encoding="utf-8")))
     ok = True
 
@@ -29,13 +34,18 @@ def main():
         print(("PASS  " if cond else "FAIL  ") + text)
         ok = ok and cond
 
-    check(rows[0] == HEADER, "header is exactly the 18 agreed columns")
+    check(rows[0] == HEADER, "header is exactly the %d agreed columns" % len(HEADER))
     data = [dict(zip(HEADER, r)) for r in rows[1:]]
     expected = a.controllers * a.maps * a.noises * a.seeds
     check(len(data) == expected, "row count %d (expected %d)" % (len(data), expected))
-    check(all(len(r) == len(HEADER) for r in rows), "every row has 18 cells")
+    check(all(len(r) == len(HEADER) for r in rows), "every row has %d cells" % len(HEADER))
     keys = collections.Counter((d["controller"], d["map"], d["noise"], d["seed"]) for d in data)
     check(max(keys.values()) == 1, "no duplicate (controller, map, noise, seed)")
+    if a.stress:
+        conds = collections.Counter((d["noise"], d["dropout"]) for d in data)
+        per_cond = a.controllers * a.maps * a.seeds
+        want = {("0.20", "0.02"): per_cond, ("0.30", "0.02"): per_cond, ("0.05", "0.10"): per_cond}
+        check(dict(conds) == want, "conditions (noise, dropout) and rows each: %s (expected %d each, exactly these three)" % (dict(conds), per_cond))
     empty = [d for d in data if any(v.strip() == "" for v in d.values())]
     check(not empty, "no empty cells (%d rows with an empty cell)" % len(empty))
 

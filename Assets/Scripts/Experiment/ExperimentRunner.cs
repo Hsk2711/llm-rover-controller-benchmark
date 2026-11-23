@@ -8,6 +8,12 @@
 // (success 0, outcome "no_compile") without any simulation. RESUME: runs already in the CSV are skipped when the program starts.
 // Command line (player) or results/runner_args.txt (Editor):  --quick | --full   --timescale N   --arenas N   --maps 1,4
 //   --seeds A-B   --noises 0.05   --out file.csv   --results folder   --offset 70 (arena 0 position; keep 70 for the real runs).   Paths (x, z every 0.1 s) are saved for M4_Trap, noise 0.05, seeds 1-3.
+// STRESS TEST (Phase 8b, exploratory, never mixed into results.csv):  --noise-levels 0.20,0.30   --dropout 0.10   (+ --out results_stress.csv)
+//   --noise-levels picks levels from SimConfig.extendedNoiseLevels (0, 0.02, 0.05, 0.10, 0.20, 0.30); the noise index of a level is its position
+//   in that table, so the sensor seed (SensorSeed, unchanged) of the four standard levels is exactly the one of the main run.
+//   --dropout sets the echo-loss probability of the runtime config copy (default: SimConfig.dropoutProbability = 0.02).
+//   If either option is used the csv gets one extra last column "dropout". With --out the progress file is progress_<out>.txt and the paths go to
+//   results/paths_<out>/ (so the main run's progress.txt and results/paths are never touched).
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -48,6 +54,8 @@ public class ExperimentRunner : MonoBehaviour
         public List<float> noiseFilter;      // null = all four levels (test only)
         public int seedFirst = -1, seedLast = -1;
         public string outCsv;                // null = results.csv (full) or quick.csv (quick)
+        public List<float> noiseLevels;      // --noise-levels (stress test): levels taken from SimConfig.extendedNoiseLevels; null = the four standard levels
+        public float dropout = -1f;          // --dropout: echo-loss probability; negative = SimConfig.dropoutProbability (the study value)
         public string resultsDir;
     }
 
@@ -78,6 +86,7 @@ public class ExperimentRunner : MonoBehaviour
     Options opt;
     SimConfig runCfg;
     string resultsDir, csvPath, progressPath, pathsDir;
+    bool stressMode;                         // --noise-levels or --dropout given: extra csv column "dropout"
     Entry[] entries;
     float[] noises;
     readonly List<Arena> arenaList = new List<Arena>();
@@ -133,14 +142,28 @@ public class ExperimentRunner : MonoBehaviour
 
         resultsDir = opt.resultsDir;
         Directory.CreateDirectory(resultsDir);
-        pathsDir = Path.Combine(resultsDir, "paths");
+        string outStem = opt.outCsv != null ? Path.GetFileNameWithoutExtension(opt.outCsv) : null;
+        pathsDir = Path.Combine(resultsDir, outStem == null ? "paths" : "paths_" + outStem);     // --out runs never overwrite the main run's paths
         Directory.CreateDirectory(pathsDir);
         csvPath = Path.Combine(resultsDir, opt.outCsv ?? (opt.quick ? "quick.csv" : "results.csv"));
-        progressPath = Path.Combine(resultsDir, "progress.txt");
+        progressPath = Path.Combine(resultsDir, outStem == null ? "progress.txt" : "progress_" + outStem + ".txt");
 
         runCfg = Instantiate(config);
         runCfg.SetExperimentMode();
         noises = runCfg.noiseLevels;
+        stressMode = opt.noiseLevels != null || opt.dropout >= 0f;
+        if (opt.dropout >= 0f) runCfg.dropoutProbability = opt.dropout;      // the sensors read it from this runtime copy
+        if (opt.noiseLevels != null)
+        {
+            // the level -> noise index table is SimConfig.extendedNoiseLevels (its first four entries are the standard levels, same indices as the main run)
+            noises = runCfg.extendedNoiseLevels;
+            opt.noiseFilter = new List<float>();
+            foreach (float lv in opt.noiseLevels)
+            {
+                if (Array.FindIndex(noises, x => Mathf.Abs(x - lv) < 1e-4f) < 0) throw new ArgumentException("--noise-levels: " + lv + " is not in SimConfig.extendedNoiseLevels");
+                opt.noiseFilter.Add(lv);
+            }
+        }
         entries = LoadEntries();
 
         int seedFirst = opt.seedFirst >= 0 ? opt.seedFirst : runCfg.firstTrialSeed;
@@ -245,6 +268,11 @@ public class ExperimentRunner : MonoBehaviour
                         o.mapFilter.Add(k);
                     }
                     i++; break;
+                case "--noise-levels":
+                    o.noiseLevels = new List<float>();
+                    foreach (var t in next.Split(',')) o.noiseLevels.Add(float.Parse(t, CultureInfo.InvariantCulture));
+                    i++; break;
+                case "--dropout": o.dropout = float.Parse(next, CultureInfo.InvariantCulture); i++; break;
                 case "--noises":
                     o.noiseFilter = new List<float>();
                     foreach (var t in next.Split(',')) o.noiseFilter.Add(float.Parse(t, CultureInfo.InvariantCulture));
@@ -335,12 +363,12 @@ public class ExperimentRunner : MonoBehaviour
         bool fresh = !File.Exists(csvPath) || new FileInfo(csvPath).Length == 0;
         csvStream = new FileStream(csvPath, FileMode.Append, FileAccess.Write, FileShare.Read);
         csv = new StreamWriter(csvStream, new UTF8Encoding(false)) { NewLine = "\n" };
-        if (fresh) { csv.WriteLine(Header); FlushRow(); }
+        if (fresh) { csv.WriteLine(stressMode ? Header + ",dropout" : Header); FlushRow(); }
     }
 
     void FlushRow() { csv.Flush(); csvStream.Flush(true); }
 
-    void WriteRow(string row) { csv.WriteLine(row); FlushRow(); }
+    void WriteRow(string row) { csv.WriteLine(stressMode ? row + "," + F(runCfg.dropoutProbability, "0.00") : row); FlushRow(); }
 
     static string F(float v, string fmt) => v.ToString(fmt, CultureInfo.InvariantCulture);
 

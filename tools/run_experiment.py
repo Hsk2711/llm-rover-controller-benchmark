@@ -18,6 +18,9 @@ Usage (arguments after "--" go to the player):
   python tools/run_experiment.py -- --quick --timescale 10 --arenas 8
   python tools/run_experiment.py -- --full --timescale 10 --arenas 8
 Options of this script: --exe PATH, --stall-seconds N, --max-failures N, --poll N
+Phase 8b (stress test): with "--out NAME.csv" the progress file is results/progress_NAME.txt and the restart log results/runner_restarts_NAME.csv,
+so the main run's progress.txt is never overwritten.  Example (one condition per call, all into the same csv):
+  python tools/run_experiment.py -- --full --timescale 10 --arenas 8 --noise-levels 0.20,0.30 --dropout 0.02 --out results_stress.csv
 """
 import argparse, csv, os, subprocess, sys, time
 
@@ -106,6 +109,11 @@ def main():
         player_args = ["--full"] + player_args
     csv_path = os.path.join(RESULTS, csv_name(player_args))
     os.makedirs(RESULTS, exist_ok=True)
+    if "--out" in player_args:                       # separate progress / restart files, the main run's files stay untouched
+        global PROGRESS, RESTARTS
+        stem = os.path.splitext(os.path.basename(csv_path))[0]
+        PROGRESS = os.path.join(RESULTS, "progress_%s.txt" % stem)
+        RESTARTS = os.path.join(RESULTS, "runner_restarts_%s.csv" % stem)
 
     launch_no = 0
     failures_in_a_row = 0            # restarts in a row that added no row
