@@ -155,6 +155,91 @@ Cluster-bootstrap 95% CI (overall, resampling controllers):
 
 (M4: Rule scores 0%, so every controller trivially matches it; 'strictly beat' is the meaningful column there.)
 
+## S. Stress test (EXPLORATORY, Phase 8b; not part of the pre-planned analysis)
+
+Data: `results/results_stress.csv` (11,520 rows = 32 controllers x 4 maps x 30 seeds x 3 conditions: noise 0.20 / dropout 2 %, noise 0.30 / dropout 2 %, noise 0.05 / dropout 10 %). Noise 0, 0.05 and 0.10 come from the main data, so the main run is unchanged. Noise levels above 0.10 lie outside the pre-registered design range. Bootstrap seed 20270109, 5000 resamples (own generator).
+
+### S1. Success rate (%) by noise level, dropout 2 % (Wilson 95% CI for Rule / Bug2, trial level; cluster-bootstrap 95% CI over controllers for the LLM groups; all maps pooled, no_compile counted as 0)
+
+| group | noise 0.00 | noise 0.05 | noise 0.10 | noise 0.20 | noise 0.30 |
+|---|---|---|---|---|---|
+| Rule | 75.0 [66.6, 81.9] | 75.0 [66.6, 81.9] | 75.0 [66.6, 81.9] | 75.0 [66.6, 81.9] | 75.0 [66.6, 81.9] |
+| Bug2 | 22.5 [15.9, 30.8] | 18.3 [12.4, 26.2] | 10.0 [5.8, 16.7] | 5.8 [2.9, 11.6] | 6.7 [3.4, 12.6] |
+| ChatGPT OS | 10.0 [0.0, 30.0] | 10.3 [0.0, 30.3] | 11.7 [0.0, 31.7] | 12.0 [0.0, 32.7] | 7.2 [0.0, 20.8] |
+| ChatGPT FB | 5.7 [1.5, 9.8] | 5.5 [1.3, 9.8] | 4.8 [0.3, 11.5] | 1.7 [0.0, 4.0] | 0.2 [0.0, 0.5] |
+| Gemini OS | 31.5 [20.0, 48.8] | 30.5 [16.5, 48.5] | 29.2 [14.0, 46.7] | 23.5 [10.3, 37.0] | 20.8 [11.0, 29.3] |
+| Gemini FB | 22.2 [7.0, 37.3] | 21.0 [6.5, 35.8] | 19.2 [6.0, 34.8] | 12.7 [3.2, 22.2] | 12.8 [3.2, 23.3] |
+| Claude OS | 76.7 [67.7, 88.5] | 77.0 [69.0, 88.5] | 76.8 [65.2, 89.3] | 76.0 [60.5, 91.5] | 57.0 [37.3, 77.2] |
+| Claude FB | 75.3 [65.8, 87.3] | 74.5 [62.0, 88.5] | 77.8 [68.2, 89.2] | 73.0 [56.1, 91.5] | 50.5 [26.8, 74.2] |
+| LLM OS | 39.4 [23.4, 55.6] | 39.3 [22.9, 55.9] | 39.2 [23.0, 56.3] | 37.2 [21.3, 54.5] | 28.3 [15.6, 42.4] |
+| LLM FB | 34.4 [18.2, 50.8] | 33.7 [17.7, 50.4] | 33.9 [17.7, 51.8] | 29.1 [12.8, 47.6] | 21.2 [8.6, 36.4] |
+
+(noise 0.20 and 0.30 are the exploratory stress levels; noise 0.02 is in `S1_stress_success_by_noise.csv` and fig6.)
+
+Success rate (%) per map (M1 open, M2 cluttered, M3 corridor, M4 trap) at noise 0.05 / 0.10 / 0.20 / 0.30:
+
+| family | M1 n0.05 | M2 n0.05 | M3 n0.05 | M4 n0.05 | M1 n0.10 | M2 n0.10 | M3 n0.10 | M4 n0.10 | M1 n0.20 | M2 n0.20 | M3 n0.20 | M4 n0.20 | M1 n0.30 | M2 n0.30 | M3 n0.30 | M4 n0.30 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Rule | 100.0 | 100.0 | 100.0 | 0.0 | 100.0 | 100.0 | 100.0 | 0.0 | 100.0 | 100.0 | 100.0 | 0.0 | 100.0 | 100.0 | 100.0 | 0.0 |
+| Bug2 | 0.0 | 0.0 | 0.0 | 73.3 | 0.0 | 0.0 | 3.3 | 36.7 | 0.0 | 0.0 | 6.7 | 16.7 | 0.0 | 0.0 | 3.3 | 23.3 |
+| LLM OS | 62.7 | 31.1 | 36.4 | 26.9 | 65.1 | 28.9 | 36.0 | 26.9 | 63.8 | 24.2 | 33.3 | 27.3 | 60.2 | 19.1 | 7.8 | 26.2 |
+| LLM FB | 55.8 | 28.0 | 30.9 | 20.0 | 54.9 | 29.1 | 30.2 | 21.6 | 49.6 | 21.8 | 26.4 | 18.7 | 45.3 | 11.1 | 8.4 | 19.8 |
+
+### S2. Dropout 10 % vs dropout 2 % at noise 0.05 (paired: same controller, map, start pose and sensor noise stream)
+
+| group | trials | success_2pct | success_10pct | diff_pp | only_at_2pct | only_at_10pct | mcnemar_exact_p |
+|---|---|---|---|---|---|---|---|
+| Rule | 120 | 75.000 | 75.000 | 0.000 | 0 | 0 |  |
+| Bug2 | 120 | 18.333 | 20.833 | 2.500 | 4 | 7 | 0.549 |
+| LLM OS | 1800 | 39.278 | 38.611 | -0.667 | 56 | 44 | 0.271 |
+| LLM FB | 1800 | 33.667 | 33.389 | -0.278 | 37 | 32 | 0.630 |
+| LLM all | 3600 | 36.472 | 36.000 | -0.472 | 93 | 76 | 0.218 |
+| ChatGPT (OS+FB) | 1200 | 7.917 | 8.083 | 0.167 | 11 | 13 | 0.839 |
+| Gemini (OS+FB) | 1200 | 25.750 | 25.000 | -0.750 | 47 | 38 | 0.386 |
+| Claude (OS+FB) | 1200 | 75.750 | 74.917 | -0.833 | 35 | 25 | 0.245 |
+
+(McNemar columns: runs that succeeded only with 2 % dropout / only with 10 % dropout; trial level, trials of one controller are not independent, so the p value is descriptive.)
+
+Controller level (unit = controller, success rate over its 120 runs; the 2 no_compile files are excluded as they are 0 in both conditions):
+
+- LLM, compiled controllers: n=28 controllers, 15 tied, mean diff (10% - 2% dropout) = -0.5 pp (bootstrap 95% CI -1.7 to +0.5); Wilcoxon signed-rank p = 0.9164, rank-biserial r = -0.03 (+ = more success with 10% dropout)
+- ChatGPT (descriptive): n=8 controllers, 5 tied, mean diff (10% - 2% dropout) = +0.2 pp (bootstrap 95% CI -0.2 to +0.7); Wilcoxon signed-rank p = 0.7500, rank-biserial r = +0.50 (+ = more success with 10% dropout)
+- Gemini (descriptive): n=10 controllers, 3 tied, mean diff (10% - 2% dropout) = -0.8 pp (bootstrap 95% CI -3.3 to +1.6); Wilcoxon signed-rank p = 0.7344, rank-biserial r = -0.18 (+ = more success with 10% dropout)
+- Claude (descriptive): n=10 controllers, 7 tied, mean diff (10% - 2% dropout) = -0.8 pp (bootstrap 95% CI -2.9 to +0.3); Wilcoxon signed-rank p = 1.0000, rank-biserial r = +0.00 (+ = more success with 10% dropout)
+
+### S3. Noise effect over the extended range 0 - 0.30 (dropout 2 %)
+
+**LLM (28 compiled controllers, 20160 simulated rows)**, success ~ noise + map + (1|controller); linear in noise on the log-odds scale. Odds ratio per +0.10 noise.
+
+- Random-intercept logistic (variational Bayes): OR = 0.666 (95% interval 0.647 - 0.686); controller-intercept SD (log-odds) = 3.74. (Main range 0 - 0.10 only, section B1: OR = 0.978.)
+- GEE logistic clustered by controller, 0 - 0.30 (n=20160): OR = 0.840 (95% CI 0.765 - 0.923), p = 0.0003.
+- GEE logistic clustered by controller, main range 0 - 0.10 (n=13440): OR = 0.989 (95% CI 0.878 - 1.114), p = 0.8569.
+- GEE logistic clustered by controller, exploratory part 0.10 - 0.30 (levels 0.10, 0.20, 0.30) (n=10080): OR = 0.759 (95% CI 0.659 - 0.873), p = 0.0001.
+
+**Rule**: successes per map x noise (out of 30 each):
+
+| map | 0.0 | 0.02 | 0.05 | 0.1 | 0.2 | 0.3 |
+|---|---|---|---|---|---|---|
+| M1_Open | 30 | 30 | 30 | 30 | 30 | 30 |
+| M2_Cluttered | 30 | 30 | 30 | 30 | 30 | 30 |
+| M3_Corridor | 30 | 30 | 30 | 30 | 30 | 30 |
+| M4_Trap | 0 | 0 | 0 | 0 | 0 | 0 |
+
+- No map has any variation in outcome: success is identical at every noise level up to 0.30.
+
+**Bug2**: successes per map x noise (out of 30 each):
+
+| map | 0.0 | 0.02 | 0.05 | 0.1 | 0.2 | 0.3 |
+|---|---|---|---|---|---|---|
+| M1_Open | 0 | 0 | 0 | 0 | 0 | 0 |
+| M2_Cluttered | 0 | 0 | 0 | 0 | 0 | 0 |
+| M3_Corridor | 0 | 0 | 0 | 1 | 2 | 1 |
+| M4_Trap | 27 | 17 | 22 | 11 | 5 | 7 |
+
+- Logistic regression over 0 - 0.30 on the maps with outcome variation (M3_Corridor, M4_Trap): OR per +0.10 noise = 0.442 (95% CI 0.321 - 0.609), p = 0.0000 (trials of one controller treated as independent).
+
+Figure 6 note: success vs noise 0 - 0.30 (dropout 2 %); the shaded region above 0.10 is exploratory (outside the design range). Rule / Bug2 bands = trial-level Wilson; LLM bands = cluster bootstrap over controllers. The 10 % dropout condition is not plotted (see S2).
+
 ## Key numbers
 
 - Overall success: Rule 75.0%, Bug2 16.2%, LLM-OS 39.3%, LLM-FB 33.9%.

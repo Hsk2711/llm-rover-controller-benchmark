@@ -1,0 +1,14 @@
+\begin{tabular}{llllllll}
+\hline
+group & trials & success\_2pct & success\_10pct & diff\_pp & only\_at\_2pct & only\_at\_10pct & mcnemar\_exact\_p \\
+\hline
+Rule & 120 & 75.000 & 75.000 & 0.000 & 0 & 0 & -- \\
+Bug2 & 120 & 18.333 & 20.833 & 2.500 & 4 & 7 & 0.549 \\
+LLM OS & 1800 & 39.278 & 38.611 & -0.667 & 56 & 44 & 0.271 \\
+LLM FB & 1800 & 33.667 & 33.389 & -0.278 & 37 & 32 & 0.630 \\
+LLM all & 3600 & 36.472 & 36.000 & -0.472 & 93 & 76 & 0.218 \\
+ChatGPT (OS+FB) & 1200 & 7.917 & 8.083 & 0.167 & 11 & 13 & 0.839 \\
+Gemini (OS+FB) & 1200 & 25.750 & 25.000 & -0.750 & 47 & 38 & 0.386 \\
+Claude (OS+FB) & 1200 & 75.750 & 74.917 & -0.833 & 35 & 25 & 0.245 \\
+\hline
+\end{tabular}

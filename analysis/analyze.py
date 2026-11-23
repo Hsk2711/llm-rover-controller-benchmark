@@ -510,6 +510,199 @@ ax.set_ylabel("share of trials (%)"); ax.set_ylim(0, 100)
 ax.legend(ncol=4, loc="upper center", bbox_to_anchor=(0.5, 1.2), frameon=False, columnspacing=0.8, handlelength=1.3)
 savefig(fig, "fig5_failure_types")
 
+# ================================================================== S. STRESS TEST (Phase 8b, EXPLORATORY)
+# results/results_stress.csv (NEVER modified here): noise 0.20 and 0.30 with 2 % dropout, and noise 0.05 with 10 % dropout, 32 controllers x 4 maps x
+# 30 seeds each. Same sensor seeds as the main run (noise 0.05 uses the main run's stream, so the 10 % dropouts include the main run's 2 % dropouts).
+# Own bootstrap generator (seed BOOT_SEED + 8) so the numbers of sections A-C do not depend on this section.
+srng = np.random.default_rng(BOOT_SEED + 8)
+sd = pd.read_csv(os.path.join(ROOT, "results", "results_stress.csv"), na_values=["NA"], keep_default_na=False)
+for c in ["success", "collision", "timeout", "seed", "noise", "dropout"]:
+    sd[c] = pd.to_numeric(sd[c])
+sd["bot"] = sd["model_label"].map(lambda s_: s_.split()[0] if s_.startswith(("ChatGPT", "Gemini", "Claude")) else s_)
+sd["cond"] = sd["condition"].where(sd["family"] == "LLM", "")
+sd["grp"] = np.where(sd["family"] == "LLM", sd["bot"] + " " + sd["cond"], sd["family"])
+sd["noise"] = sd["noise"].round(2)
+sd["nc"] = (sd["outcome"] == "no_compile").astype(int)
+assert len(sd) == 11520 and (sd["outcome"] != "hang").all()
+sd_a = sd[sd["dropout"].round(2) == 0.02]                        # noise 0.20 and 0.30, 2 % dropout (the study value)
+sd_c = sd[sd["dropout"].round(2) == 0.10]                        # noise 0.05, 10 % dropout
+assert set(sd_a["noise"]) == {0.2, 0.3} and set(sd_c["noise"]) == {0.05}
+dfx = pd.concat([df.assign(dropout=0.02), sd_a], ignore_index=True)          # noise 0 ... 0.30, dropout 2 %
+NOISES6 = [0.00, 0.02, 0.05, 0.10, 0.20, 0.30]
+TAB_NOISES = [0.00, 0.05, 0.10, 0.20, 0.30]
+sets_x = [(g, dfx[dfx["grp"] == g]) for g in GROUPS] + [("LLM OS", dfx[(dfx["family"] == "LLM") & (dfx["cond"] == "OS")]), ("LLM FB", dfx[(dfx["family"] == "LLM") & (dfx["cond"] == "FB")])]
+
+say("## S. Stress test (EXPLORATORY, Phase 8b; not part of the pre-planned analysis)")
+say("")
+say("Data: `results/results_stress.csv` (11,520 rows = 32 controllers x 4 maps x 30 seeds x 3 conditions: noise 0.20 / dropout 2 %%, noise 0.30 / dropout 2 %%, noise 0.05 / dropout 10 %%). Noise 0, 0.05 and 0.10 come from the main data, so the main run is unchanged. Noise levels above 0.10 lie outside the pre-registered design range. Bootstrap seed %d, %d resamples (own generator)." % (BOOT_SEED + 8, N_BOOT))
+say("")
+
+# S1 success by noise
+rows = []
+for g, sg in sets_x:
+    for nz in NOISES6:
+        s_ = sg[sg["noise"] == nz]
+        k, n = int(s_["success"].sum()), len(s_)
+        lo, hi = wilson(k, n)
+        blo, bhi = cluster_boot_rate(s_, srng) if s_["controller"].nunique() > 1 else (np.nan, np.nan)
+        rows.append(dict(group=g, noise=nz, controllers=s_["controller"].nunique(), successes=k, trials=n, rate_pct=100 * k / n, wilson_lo_pct=100 * lo, wilson_hi_pct=100 * hi,
+                         cluster_boot_lo_pct=100 * blo, cluster_boot_hi_pct=100 * bhi))
+S1 = pd.DataFrame(rows)
+save_table(S1, "S1_stress_success_by_noise")
+say("### S1. Success rate (%) by noise level, dropout 2 % (Wilson 95% CI for Rule / Bug2, trial level; cluster-bootstrap 95% CI over controllers for the LLM groups; all maps pooled, no_compile counted as 0)")
+say("")
+S1["cell"] = S1.apply(lambda r: "%.1f [%.1f, %.1f]" % (r.rate_pct, (r.cluster_boot_lo_pct if not np.isnan(r.cluster_boot_lo_pct) else r.wilson_lo_pct),
+                                                    (r.cluster_boot_hi_pct if not np.isnan(r.cluster_boot_hi_pct) else r.wilson_hi_pct)), axis=1)
+t = S1[S1["noise"].isin(TAB_NOISES)].pivot(index="group", columns="noise", values="cell").loc[[g for g, _ in sets_x], TAB_NOISES]
+t.columns = ["noise %.2f" % c for c in t.columns]
+say(md_table(t.reset_index()))
+say("")
+say("(noise 0.20 and 0.30 are the exploratory stress levels; noise 0.02 is in `S1_stress_success_by_noise.csv` and fig6.)")
+say("")
+# per family and map at the stress levels (descriptive)
+rows = []
+for fam, sg in [("Rule", dfx[dfx["grp"] == "Rule"]), ("Bug2", dfx[dfx["grp"] == "Bug2"]), ("LLM OS", sets_x[-2][1]), ("LLM FB", sets_x[-1][1])]:
+    r = {"family": fam}
+    for nz in [0.05, 0.10, 0.20, 0.30]:
+        for m_ in MAPS:
+            s_ = sg[(sg["noise"] == nz) & (sg["map"] == m_)]
+            r["%s n%.2f" % (m_[:2], nz)] = 100 * s_["success"].mean()
+    rows.append(r)
+S1m = pd.DataFrame(rows)
+save_table(S1m, "S1b_stress_success_by_map")
+say("Success rate (%) per map (M1 open, M2 cluttered, M3 corridor, M4 trap) at noise 0.05 / 0.10 / 0.20 / 0.30:")
+say("")
+say(md_table(S1m, "%.1f"))
+say("")
+
+# S2 paired dropout comparison
+say("### S2. Dropout 10 % vs dropout 2 % at noise 0.05 (paired: same controller, map, start pose and sensor noise stream)")
+say("")
+pj = df[df["noise"] == 0.05].merge(sd_c, on=["controller", "map", "seed"], suffixes=("_m", "_d"))
+assert len(pj) == 3840
+rows = []
+ctrl_diff = pj.groupby(["controller", "grp_m", "nc_m"]).apply(lambda g_: pd.Series({"rate_m": g_["success_m"].mean(), "rate_d": g_["success_d"].mean()})).reset_index()
+ctrl_diff["diff"] = ctrl_diff["rate_d"] - ctrl_diff["rate_m"]
+for label, mask in [("Rule", pj["grp_m"] == "Rule"), ("Bug2", pj["grp_m"] == "Bug2"), ("LLM OS", (pj["family_m"] == "LLM") & (pj["cond_m"] == "OS")),
+                    ("LLM FB", (pj["family_m"] == "LLM") & (pj["cond_m"] == "FB")), ("LLM all", pj["family_m"] == "LLM")] + \
+                   [(b_ + " (OS+FB)", pj["bot_m"] == b_) for b_ in BOTS]:
+    s_ = pj[mask]
+    b_ = int(((s_["success_m"] == 1) & (s_["success_d"] == 0)).sum())      # success only at 2 % dropout
+    c_ = int(((s_["success_m"] == 0) & (s_["success_d"] == 1)).sum())      # success only at 10 % dropout
+    pm_ = stats.binomtest(min(b_, c_), b_ + c_, 0.5).pvalue if b_ + c_ else np.nan
+    rows.append(dict(group=label, trials=len(s_), success_2pct=100 * s_["success_m"].mean(), success_10pct=100 * s_["success_d"].mean(),
+                     diff_pp=100 * (s_["success_d"].mean() - s_["success_m"].mean()), only_at_2pct=b_, only_at_10pct=c_, mcnemar_exact_p=pm_))
+S2 = pd.DataFrame(rows)
+save_table(S2, "S2_dropout10_paired")
+say(md_table(S2, "%.3f"))
+say("")
+say("(McNemar columns: runs that succeeded only with 2 % dropout / only with 10 % dropout; trial level, trials of one controller are not independent, so the p value is descriptive.)")
+say("")
+llm_c = ctrl_diff[(ctrl_diff["nc_m"] == 0) & ~ctrl_diff["grp_m"].isin(["Rule", "Bug2"])]
+
+
+def paired_report(d, label):
+    d = np.asarray(d, float)
+    nz = d[d != 0]
+    line = "- %s: n=%d controllers, %d tied, mean diff (10%% - 2%% dropout) = %+.1f pp" % (label, len(d), len(d) - len(nz), 100 * d.mean())
+    lo, hi = boot_mean_ci(d, srng)
+    line += " (bootstrap 95%% CI %+.1f to %+.1f)" % (100 * lo, 100 * hi)
+    if len(nz) >= 1:
+        ranks = stats.rankdata(np.abs(nz))
+        wp, wm = ranks[nz > 0].sum(), ranks[nz < 0].sum()
+        try:
+            pw = stats.wilcoxon(d, zero_method="wilcox").pvalue
+        except Exception:
+            pw = np.nan
+        line += "; Wilcoxon signed-rank p = %.4f, rank-biserial r = %+.2f (+ = more success with 10%% dropout)" % (pw, (wp - wm) / (wp + wm))
+    say(line)
+
+
+say("Controller level (unit = controller, success rate over its 120 runs; the 2 no_compile files are excluded as they are 0 in both conditions):")
+say("")
+paired_report(llm_c["diff"], "LLM, compiled controllers")
+for b_ in BOTS:
+    paired_report(llm_c[llm_c["grp_m"].str.startswith(b_)]["diff"], b_ + " (descriptive)")
+say("")
+
+# S3 noise effect over 0 - 0.30
+say("### S3. Noise effect over the extended range 0 - 0.30 (dropout 2 %)")
+say("")
+sx = dfx[dfx["nc"] == 0].copy()
+sx["noise10"] = sx["noise"] * 10                    # one unit = +0.10 noise
+slx = sx[sx["family"] == "LLM"].copy()
+say("**LLM (28 compiled controllers, %d simulated rows)**, success ~ noise + map + (1|controller); linear in noise on the log-odds scale. Odds ratio per +0.10 noise." % len(slx))
+say("")
+try:
+    from statsmodels.genmod.bayes_mixed_glm import BinomialBayesMixedGLM
+    m_ = BinomialBayesMixedGLM.from_formula("success ~ noise10 + C(map)", {"ctrl": "0 + C(controller)"}, slx)
+    r_ = m_.fit_vb()
+    i_ = list(m_.fep_names).index("noise10")
+    mu, sd_ = r_.fe_mean[i_], r_.fe_sd[i_]
+    say("- Random-intercept logistic (variational Bayes): OR = %.3f (95%% interval %.3f - %.3f); controller-intercept SD (log-odds) = %.2f. (Main range 0 - 0.10 only, section B1: OR = 0.978.)" % (math.exp(mu), math.exp(mu - 1.96 * sd_), math.exp(mu + 1.96 * sd_), math.exp(r_.vcp_mean[0])))
+except Exception as e:
+    say("- Mixed logistic failed: %s" % e)
+for lab, sub_ in [("0 - 0.30", slx), ("main range 0 - 0.10", slx[slx["noise"] <= 0.10]), ("exploratory part 0.10 - 0.30 (levels 0.10, 0.20, 0.30)", slx[slx["noise"] >= 0.10])]:
+    try:
+        g_ = smf.gee("success ~ noise10 + C(map)", "controller", sub_, family=sm.families.Binomial(), cov_struct=sm.cov_struct.Exchangeable()).fit()
+        ci_ = g_.conf_int().loc["noise10"]
+        say("- GEE logistic clustered by controller, %s (n=%d): OR = %.3f (95%% CI %.3f - %.3f), p = %.4f." % (lab, len(sub_), math.exp(g_.params["noise10"]), math.exp(ci_[0]), math.exp(ci_[1]), g_.pvalues["noise10"]))
+    except Exception as e:
+        say("- GEE %s failed: %s" % (lab, e))
+say("")
+for fam in ["Rule", "Bug2"]:
+    s_ = sx[sx["family"] == fam]
+    tbl = s_.groupby(["map", "noise"])["success"].sum().unstack()
+    say("**%s**: successes per map x noise (out of 30 each):" % fam)
+    say("")
+    say(md_table(tbl.reset_index(), "%.0f"))
+    say("")
+    keep = [m__ for m__ in MAPS if 0 < s_[s_["map"] == m__]["success"].sum() < len(s_[s_["map"] == m__])]
+    if len(keep) == 0:
+        say("- No map has any variation in outcome: success is identical at every noise level up to 0.30.")
+    else:
+        try:
+            f_ = smf.logit("success ~ noise10" + (" + C(map)" if len(keep) > 1 else ""), s_[s_["map"].isin(keep)]).fit(disp=0)
+            ci_ = f_.conf_int().loc["noise10"]
+            say("- Logistic regression over 0 - 0.30 on the maps with outcome variation (%s): OR per +0.10 noise = %.3f (95%% CI %.3f - %.3f), p = %.4f (trials of one controller treated as independent)." % (", ".join(keep), math.exp(f_.params["noise10"]), math.exp(ci_[0]), math.exp(ci_[1]), f_.pvalues["noise10"]))
+        except Exception as e:
+            say("- Logistic regression failed (%s)." % e)
+    say("")
+
+# fig6: same style as fig1, noise 0 - 0.30, region above 0.10 shaded
+fig, ax = plt.subplots(figsize=(W, 3.0))
+rows = []
+ax.axvspan(0.10, 0.315, color="#888888", alpha=0.14, linewidth=0, zorder=0)
+ax.axvline(0.10, color="#555555", lw=0.6, ls=":", zorder=0)
+for g, sg in [(g, dfx[dfx["grp"] == g]) for g in GROUPS]:
+    bot = g.split()[0]
+    ls = "--" if g.endswith("FB") else "-"
+    ys, los, his = [], [], []
+    for nz in NOISES6:
+        s_ = sg[sg["noise"] == nz]
+        k, n = int(s_["success"].sum()), len(s_)
+        if s_["controller"].nunique() > 1:
+            lo, hi = cluster_boot_rate(s_, np.random.default_rng(BOOT_SEED))
+        else:
+            lo, hi = wilson(k, n)
+        ys.append(100 * k / n); los.append(100 * lo); his.append(100 * hi)
+        rows.append(dict(group=g, noise=nz, rate_pct=100 * k / n, ci_lo_pct=100 * lo, ci_hi_pct=100 * hi))
+    ax.fill_between(NOISES6, los, his, color=COL[bot], alpha=0.08, linewidth=0)
+    ax.plot(NOISES6, ys, ls, color=COL[bot], marker=MARK[bot], markersize=3.5, mfc=COL[bot] if ls == "-" else "white", label=g)
+pd.DataFrame(rows).to_csv(os.path.join(OUT, "C6_stress_success_vs_noise_data.csv"), index=False)
+ax.text(0.205, 98, "exploratory", ha="center", va="top", fontsize=7, style="italic", color="#333333")
+ax.set_xlabel("sensor noise (fraction of distance)")
+ax.set_ylabel("success rate (%)")
+ax.set_xticks(TAB_NOISES)                           # 0.02 is plotted but not labelled (its label would touch 0 and 0.05)
+ax.set_xticklabels(["0", "0.05", "0.10", "0.20", "0.30"])
+ax.set_xlim(-0.01, 0.315)
+ax.set_ylim(-2, 102)
+ax.grid(alpha=0.3, linewidth=0.4)
+ax.legend(ncol=2, loc="upper center", bbox_to_anchor=(0.5, -0.22), frameon=False, handlelength=2.2, columnspacing=1.0)
+savefig(fig, "fig6_stress")
+say("Figure 6 note: success vs noise 0 - 0.30 (dropout 2 %); the shaded region above 0.10 is exploratory (outside the design range). Rule / Bug2 bands = trial-level Wilson; LLM bands = cluster bootstrap over controllers. The 10 % dropout condition is not plotted (see S2).")
+say("")
+
 # ================================================================== summary extras
 say("## Key numbers")
 say("")
