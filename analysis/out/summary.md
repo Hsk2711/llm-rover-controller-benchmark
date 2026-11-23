@@ -106,32 +106,34 @@ Cluster-bootstrap 95% CI (overall, resampling controllers):
 
 ## B2. OS vs FB (unit = attempt, 15 pairs)
 
-| bot | attempt | os_rate | fb_rate | diff_fb_minus_os | os_nc | fb_nc |
-|---|---|---|---|---|---|---|
-| ChatGPT | 1 | 0.0 | 0.0 | 0.0 | 1 | 0 |
-| ChatGPT | 2 | 50.0 | 14.2 | -35.8 | 0 | 0 |
-| ChatGPT | 3 | 0.0 | 5.6 | 5.6 | 1 | 0 |
-| ChatGPT | 4 | 0.0 | 0.0 | 0.0 | 0 | 0 |
-| ChatGPT | 6 | 3.1 | 6.9 | 3.8 | 0 | 0 |
-| Gemini | 1 | 17.9 | 49.4 | 31.5 | 0 | 0 |
-| Gemini | 2 | 33.3 | 25.4 | -7.9 | 0 | 0 |
-| Gemini | 3 | 64.4 | 25.4 | -39.0 | 0 | 0 |
-| Gemini | 4 | 14.2 | 0.2 | -14.0 | 0 | 0 |
-| Gemini | 5 | 23.3 | 5.6 | -17.7 | 0 | 0 |
-| Claude | 1 | 68.5 | 68.5 | 0.0 | 0 | 0 |
-| Claude | 2 | 75.8 | 75.8 | 0.0 | 0 | 0 |
-| Claude | 3 | 65.6 | 59.0 | -6.7 | 0 | 0 |
-| Claude | 4 | 74.6 | 74.6 | 0.0 | 0 | 0 |
-| Claude | 5 | 98.5 | 98.5 | 0.0 | 0 | 0 |
+| bot | attempt | os_rate | fb_rate | diff_fb_minus_os | os_nc | fb_nc | identical_code_copy |
+|---|---|---|---|---|---|---|---|
+| ChatGPT | 1 | 0.0 | 0.0 | 0.0 | 1 | 0 | False |
+| ChatGPT | 2 | 50.0 | 14.2 | -35.8 | 0 | 0 | False |
+| ChatGPT | 3 | 0.0 | 5.6 | 5.6 | 1 | 0 | False |
+| ChatGPT | 4 | 0.0 | 0.0 | 0.0 | 0 | 0 | False |
+| ChatGPT | 6 | 3.1 | 6.9 | 3.8 | 0 | 0 | False |
+| Gemini | 1 | 17.9 | 49.4 | 31.5 | 0 | 0 | False |
+| Gemini | 2 | 33.3 | 25.4 | -7.9 | 0 | 0 | False |
+| Gemini | 3 | 64.4 | 25.4 | -39.0 | 0 | 0 | False |
+| Gemini | 4 | 14.2 | 0.2 | -14.0 | 0 | 0 | False |
+| Gemini | 5 | 23.3 | 5.6 | -17.7 | 0 | 0 | False |
+| Claude | 1 | 68.5 | 68.5 | 0.0 | 0 | 0 | True |
+| Claude | 2 | 75.8 | 75.8 | 0.0 | 0 | 0 | True |
+| Claude | 3 | 65.6 | 59.0 | -6.7 | 0 | 0 | False |
+| Claude | 4 | 74.6 | 74.6 | 0.0 | 0 | 0 | True |
+| Claude | 5 | 98.5 | 98.5 | 0.0 | 0 | 0 | True |
 
-(rates in %; diff = FB - OS in percentage points; *_nc = 1 if that file did not compile)
+(rates in %; diff = FB - OS in percentage points; *_nc = 1 if that file did not compile; identical_code_copy = OS and FB source files have the same SHA-256 after renaming the class/constructor identifier and normalising line endings)
 
+- Pairs with identical code (FB = OS copy, by source hash): Claude 1, Claude 2, Claude 4, Claude 5. Pairs whose code changed: 11.
 - ALL 15 attempts: n=15 pairs, 6 tied (identical OS/FB outcome), mean diff FB-OS = -5.3 pp (bootstrap 95% CI -13.8 to +3.0); Wilcoxon signed-rank p = 0.1386, rank-biserial r = -0.56 (+ = FB better)
-- ChatGPT: n=5 pairs, 2 tied (identical OS/FB outcome), mean diff FB-OS = -5.3 pp (bootstrap 95% CI -20.8 to +4.1); Wilcoxon signed-rank p = 1.0000, rank-biserial r = +0.00 (+ = FB better) [descriptive, n=5]
-- Gemini: n=5 pairs, 0 tied (identical OS/FB outcome), mean diff FB-OS = -9.4 pp (bootstrap 95% CI -28.5 to +13.3); Wilcoxon signed-rank p = 0.4375, rank-biserial r = -0.47 (+ = FB better) [descriptive, n=5]
+- ONLY pairs whose code actually changed (11 pairs): n=11 pairs, 2 tied (identical OS/FB outcome), mean diff FB-OS = -7.3 pp (bootstrap 95% CI -18.6 to +4.1); Wilcoxon signed-rank p = 0.1641, rank-biserial r = -0.56 (+ = FB better)
+- ChatGPT: n=5 pairs, 2 tied (identical OS/FB outcome), mean diff FB-OS = -5.3 pp (bootstrap 95% CI -20.8 to +3.8); Wilcoxon signed-rank p = 1.0000, rank-biserial r = +0.00 (+ = FB better) [descriptive, n=5]
+- Gemini: n=5 pairs, 0 tied (identical OS/FB outcome), mean diff FB-OS = -9.4 pp (bootstrap 95% CI -27.8 to +12.5); Wilcoxon signed-rank p = 0.4375, rank-biserial r = -0.47 (+ = FB better) [descriptive, n=5]
 - Claude: n=5 pairs, 4 tied (identical OS/FB outcome), mean diff FB-OS = -1.3 pp (bootstrap 95% CI -4.0 to +0.0); Wilcoxon signed-rank p = 1.0000, rank-biserial r = -1.00 (+ = FB better) [descriptive, n=5]
-- Sensitivity: only pairs where both files compile (13 pairs): n=13 pairs, 5 tied (identical OS/FB outcome), mean diff FB-OS = -6.6 pp (bootstrap 95% CI -16.2 to +2.5); Wilcoxon signed-rank p = 0.1484, rank-biserial r = -0.61 (+ = FB better)
-- Note: 6 of 15 pairs have identical OS/FB success rates (FB = OS copy when the one-shot already scored 10/10, or equal by chance).
+- Sensitivity: only pairs where both files compile (13 pairs): n=13 pairs, 5 tied (identical OS/FB outcome), mean diff FB-OS = -6.6 pp (bootstrap 95% CI -16.4 to +2.6); Wilcoxon signed-rank p = 0.1484, rank-biserial r = -0.61 (+ = FB better)
+- Note: 4 of 15 pairs are identical copies (zero difference by construction, tied in the all-15 test). Among the 11 changed pairs, 2 have exactly equal success rates by chance.
 - Trial-level McNemar (secondary; 7200 matched trials, trials are not independent): OS-only successes = 734, FB-only successes = 349, exact p = 4.104e-32. Odds ratio (FB/OS discordant) = 0.48.
 
 ## B3. Chatbots (per-attempt OS success rates; n = 5 per group is SMALL, treat as descriptive/exploratory)
@@ -157,6 +159,8 @@ Cluster-bootstrap 95% CI (overall, resampling controllers):
 
 - Overall success: Rule 75.0%, Bug2 16.2%, LLM-OS 39.3%, LLM-FB 33.9%.
 - Best / worst controller per chatbot (overall success, compiled files, ties broken by name): ChatGPT best LLM_ChatGPT_2_OS (50.0%), worst LLM_ChatGPT_4_OS (0.0%); Gemini best LLM_Gemini_3_OS (64.4%), worst LLM_Gemini_4_FB (0.2%); Claude best LLM_Claude_5_FB (98.5%), worst LLM_Claude_3_FB (59.0%)
+- Figure 1 caption note: Rule and Bug2 bands = trial-level Wilson 95% intervals; LLM bands = cluster bootstrap over controllers (95%).
+- Figure 3 note: 4 Claude FB = OS (identical code); lines are jittered slightly in x so overlapping lines stay visible.
 - Figure 4 panels are drawn from results/paths (saved for M4, noise 0.05, seeds 1-3 only).
 
 Outputs: tables A1-A3, B2, B4 (CSV + LaTeX), figures fig1-fig5 (PDF + PNG 300 dpi) and data files in `analysis/out/`.

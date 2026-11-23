@@ -9,7 +9,7 @@ unit. Trials are used only for within-controller effects (noise, map) and, with 
 Missing compile = failure: the two no_compile files count as success 0 in every success rate (intention-to-treat), but they are
 excluded from models/metrics that need a simulated run (noise models, secondary metrics).
 """
-import math, os, re, sys, warnings
+import hashlib, math, os, re, sys, warnings
 import numpy as np
 import pandas as pd
 import matplotlib
@@ -258,11 +258,26 @@ for bot in BOTS:
                        os_rate=os_["success"].mean(), fb_rate=fb_["success"].mean(), os_nc=int(os_["nc"].max()), fb_nc=int(fb_["nc"].max())))
 PA = pd.DataFrame(pa)
 PA["diff_fb_minus_os"] = PA["fb_rate"] - PA["os_rate"]
-PA["identical_code_copy"] = (PA["diff_fb_minus_os"] == 0)
+
+
+def source_hash(controller):
+    """SHA-256 of a controller's source after renaming LLM_<Bot>_<N>_(OS|FB) to a placeholder (class + constructor name) and
+    normalising line endings; read-only, looks in Assets/Scripts/Controllers/LLM and LLM_NoCompile (non-compiling OS files)."""
+    for folder in (os.path.join(ROOT, "Assets", "Scripts", "Controllers", "LLM"), os.path.join(ROOT, "LLM_NoCompile")):
+        p = os.path.join(folder, controller + ".cs")
+        if os.path.exists(p):
+            txt = open(p, "rb").read().decode("utf-8-sig").replace("\r\n", "\n").replace("\r", "\n")
+            txt = re.sub(r"LLM_(ChatGPT|Gemini|Claude)_\d+_(OS|FB)", "LLM_CTRL", txt)
+            return hashlib.sha256(txt.encode("utf-8")).hexdigest()
+    raise FileNotFoundError("source file of %s not found" % controller)
+
+
+# identical_code_copy comes from the SOURCE FILES (hash after name normalisation), not from the success rates
+PA["identical_code_copy"] = [source_hash(o) == source_hash(f) for o, f in zip(PA["os_ctrl"], PA["fb_ctrl"])]
 save_table(PA, "B2_per_attempt_os_vs_fb")
-say(md_table(PA.assign(os_rate=100 * PA.os_rate, fb_rate=100 * PA.fb_rate, diff_fb_minus_os=100 * PA.diff_fb_minus_os)[["bot", "attempt", "os_rate", "fb_rate", "diff_fb_minus_os", "os_nc", "fb_nc"]], "%.1f"))
+say(md_table(PA.assign(os_rate=100 * PA.os_rate, fb_rate=100 * PA.fb_rate, diff_fb_minus_os=100 * PA.diff_fb_minus_os)[["bot", "attempt", "os_rate", "fb_rate", "diff_fb_minus_os", "os_nc", "fb_nc", "identical_code_copy"]], "%.1f"))
 say("")
-say("(rates in %; diff = FB - OS in percentage points; *_nc = 1 if that file did not compile)")
+say("(rates in %; diff = FB - OS in percentage points; *_nc = 1 if that file did not compile; identical_code_copy = OS and FB source files have the same SHA-256 after renaming the class/constructor identifier and normalising line endings)")
 say("")
 
 
@@ -287,13 +302,17 @@ def wilcox_report(d, label, descriptive=False):
     say(line)
 
 
+ident = PA[PA["identical_code_copy"]]
+changed = PA[~PA["identical_code_copy"]]
+say("- Pairs with identical code (FB = OS copy, by source hash): %s. Pairs whose code changed: %d." % (", ".join("%s %d" % (r.bot, r.attempt) for r in ident.itertuples()) or "none", len(changed)))
 wilcox_report(PA["diff_fb_minus_os"], "ALL 15 attempts")
+wilcox_report(changed["diff_fb_minus_os"], "ONLY pairs whose code actually changed (%d pairs)" % len(changed))
 for bot in BOTS:
     wilcox_report(PA[PA["bot"] == bot]["diff_fb_minus_os"], bot, descriptive=True)
 cmp = PA[(PA.os_nc == 0) & (PA.fb_nc == 0)]
 wilcox_report(cmp["diff_fb_minus_os"], "Sensitivity: only pairs where both files compile (%d pairs)" % len(cmp))
-tie = int((PA["diff_fb_minus_os"] == 0).sum())
-say("- Note: %d of 15 pairs have identical OS/FB success rates (FB = OS copy when the one-shot already scored 10/10, or equal by chance)." % tie)
+tie_changed = int((changed["diff_fb_minus_os"] == 0).sum())
+say("- Note: %d of 15 pairs are identical copies (zero difference by construction, tied in the all-15 test). Among the %d changed pairs, %d have exactly equal success rates by chance." % (len(ident), len(changed), tie_changed))
 # McNemar trial level
 key = ["bot", "attempt", "map", "noise", "seed"]
 o = LLM[LLM["cond"] == "OS"].set_index(key)["success"]
@@ -416,8 +435,10 @@ savefig(fig, "fig2_heatmap")
 
 # C3 slope chart OS -> FB
 fig, ax = plt.subplots(figsize=(W, 3.0))
-for _, r in PA.iterrows():
-    ax.plot([0, 1], [100 * r.os_rate, 100 * r.fb_rate], "-", color=COL[r.bot], marker=MARK[r.bot], markersize=3.5, alpha=0.85)
+jit = np.linspace(-0.045, 0.045, len(PA))          # deterministic horizontal jitter (one offset per line) so overlapping lines stay visible
+for (_, r), dx in zip(PA.iterrows(), jit):
+    ax.plot([0 + dx, 1 + dx], [100 * r.os_rate, 100 * r.fb_rate], "-", color=COL[r.bot], marker=MARK[r.bot], markersize=3.5, alpha=0.85)
+ax.text(0.5, 89, "%d Claude FB = OS (identical code)" % int(PA[PA["bot"] == "Claude"]["identical_code_copy"].sum()), ha="center", va="center", fontsize=6.5)   # empty band between the 98.5 % line and the 76 % lines
 ax.set_xticks([0, 1]); ax.set_xticklabels(["OS (one-shot)", "FB (feedback)"])
 ax.set_xlim(-0.25, 1.25)
 ax.set_ylabel("success rate per attempt (%)")
@@ -452,7 +473,8 @@ for bot in BOTS:
     sel.append((bot + " best", cs[0]))
     sel.append((bot + " worst", cs[-1]))
 m4 = df[(df["map"] == "M4_Trap") & (df["noise"] == 0.05) & (df["seed"] == 1)].set_index("controller")
-fig, axes = plt.subplots(4, 2, figsize=(W, 6.9))
+fig, axes = plt.subplots(2, 4, figsize=(7.16, 3.9))          # double-column width
+SHORT = {"ChatGPT": "GPT", "Gemini": "Gem", "Claude": "C"}
 for ax, (title, c) in zip(axes.ravel(), sel):
     for x, z, deg, sx, sz in obst:
         ax.add_patch(Polygon(box_corners(float(x), float(z), float(deg), float(sx), float(sz)), closed=True, fc="#999999", ec="#555555", lw=0.4))
@@ -464,9 +486,11 @@ for ax, (title, c) in zip(axes.ravel(), sel):
     ax.plot(p["x_m"].iloc[0], p["z_m"].iloc[0], "o", color="black", ms=2.5)
     ax.plot(p["x_m"].iloc[-1], p["z_m"].iloc[-1], "x", color="black", ms=4, mew=1.0)
     ax.set_xlim(-3.1, 3.1); ax.set_ylim(-3.1, 3.1); ax.set_aspect("equal"); ax.set_xticks([]); ax.set_yticks([])
-    short = c.replace("LLM_", "").replace("Controller", "").replace("BasedController", "")
-    ax.set_title("%s\n%s: %s" % (title, short, m4.loc[c, "outcome"]), fontsize=8)
-fig.subplots_adjust(hspace=0.55, wspace=0.15)
+    if c.startswith("LLM_"):
+        _, bot_, att_, cnd_ = c.split("_")
+        title = "%s (%s%s %s)" % (title, SHORT[bot_], att_, cnd_)
+    ax.set_title("%s — %s" % (title, m4.loc[c, "outcome"]), fontsize=5.6, pad=3)
+fig.subplots_adjust(hspace=0.25, wspace=0.12)
 savefig(fig, "fig4_example_paths_M4")
 pd.DataFrame([dict(panel=t, controller=c, outcome=m4.loc[c, "outcome"], overall_success_pct=100 * per_ctrl[c] if c in per_ctrl.index else np.nan) for t, c in sel]).to_csv(os.path.join(OUT, "C4_path_panels.csv"), index=False)
 
@@ -491,6 +515,8 @@ say("## Key numbers")
 say("")
 say("- Overall success: Rule %.1f%%, Bug2 %.1f%%, LLM-OS %.1f%%, LLM-FB %.1f%%." % tuple(A1[(A1.scope == "overall") & (A1.group == g)]["rate_pct"].iloc[0] for g in ["Rule", "Bug2", "LLM OS", "LLM FB"]))
 say("- Best / worst controller per chatbot (overall success, compiled files, ties broken by name): " + "; ".join("%s best %s (%.1f%%), worst %s (%.1f%%)" % (b_, bw[0], 100 * per_ctrl[bw[0]], bw[1], 100 * per_ctrl[bw[1]]) for b_, bw in bestworst.items()))
+say("- Figure 1 caption note: Rule and Bug2 bands = trial-level Wilson 95% intervals; LLM bands = cluster bootstrap over controllers (95%).")
+say("- Figure 3 note: 4 Claude FB = OS (identical code); lines are jittered slightly in x so overlapping lines stay visible.")
 say("- Figure 4 panels are drawn from results/paths (saved for M4, noise 0.05, seeds 1-3 only).")
 say("")
 say("Outputs: tables A1-A3, B2, B4 (CSV + LaTeX), figures fig1-fig5 (PDF + PNG 300 dpi) and data files in `analysis/out/`.")
