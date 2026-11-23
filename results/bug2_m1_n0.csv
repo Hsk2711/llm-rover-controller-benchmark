@@ -1,0 +1,321 @@
+controller,family,model_label,attempt,condition,map,noise,seed,success,collision,timeout,exceptions,path_m,straight_m,efficiency,time_s,min_clear_cm,outcome
+LLM_ChatGPT_1_OS,LLM,ChatGPT (GPT-6),1,OS,M1_Open,0.00,1,0,0,0,0,NA,6.480,NA,NA,NA,no_compile
+LLM_ChatGPT_3_OS,LLM,ChatGPT (GPT-6),3,OS,M1_Open,0.00,1,0,0,0,0,NA,6.480,NA,NA,NA,no_compile
+LLM_ChatGPT_1_OS,LLM,ChatGPT (GPT-6),1,OS,M1_Open,0.00,2,0,0,0,0,NA,6.817,NA,NA,NA,no_compile
+LLM_ChatGPT_3_OS,LLM,ChatGPT (GPT-6),3,OS,M1_Open,0.00,2,0,0,0,0,NA,6.817,NA,NA,NA,no_compile
+LLM_ChatGPT_1_OS,LLM,ChatGPT (GPT-6),1,OS,M1_Open,0.00,3,0,0,0,0,NA,6.539,NA,NA,NA,no_compile
+LLM_ChatGPT_3_OS,LLM,ChatGPT (GPT-6),3,OS,M1_Open,0.00,3,0,0,0,0,NA,6.539,NA,NA,NA,no_compile
+LLM_ChatGPT_1_OS,LLM,ChatGPT (GPT-6),1,OS,M1_Open,0.00,4,0,0,0,0,NA,6.519,NA,NA,NA,no_compile
+LLM_ChatGPT_3_OS,LLM,ChatGPT (GPT-6),3,OS,M1_Open,0.00,4,0,0,0,0,NA,6.519,NA,NA,NA,no_compile
+LLM_ChatGPT_1_OS,LLM,ChatGPT (GPT-6),1,OS,M1_Open,0.00,5,0,0,0,0,NA,6.667,NA,NA,NA,no_compile
+LLM_ChatGPT_3_OS,LLM,ChatGPT (GPT-6),3,OS,M1_Open,0.00,5,0,0,0,0,NA,6.667,NA,NA,NA,no_compile
+LLM_ChatGPT_1_OS,LLM,ChatGPT (GPT-6),1,OS,M1_Open,0.00,6,0,0,0,0,NA,6.183,NA,NA,NA,no_compile
+LLM_ChatGPT_3_OS,LLM,ChatGPT (GPT-6),3,OS,M1_Open,0.00,6,0,0,0,0,NA,6.183,NA,NA,NA,no_compile
+LLM_ChatGPT_1_OS,LLM,ChatGPT (GPT-6),1,OS,M1_Open,0.00,7,0,0,0,0,NA,5.946,NA,NA,NA,no_compile
+LLM_ChatGPT_3_OS,LLM,ChatGPT (GPT-6),3,OS,M1_Open,0.00,7,0,0,0,0,NA,5.946,NA,NA,NA,no_compile
+LLM_ChatGPT_1_OS,LLM,ChatGPT (GPT-6),1,OS,M1_Open,0.00,8,0,0,0,0,NA,6.548,NA,NA,NA,no_compile
+LLM_ChatGPT_3_OS,LLM,ChatGPT (GPT-6),3,OS,M1_Open,0.00,8,0,0,0,0,NA,6.548,NA,NA,NA,no_compile
+LLM_ChatGPT_1_OS,LLM,ChatGPT (GPT-6),1,OS,M1_Open,0.00,9,0,0,0,0,NA,6.244,NA,NA,NA,no_compile
+LLM_ChatGPT_3_OS,LLM,ChatGPT (GPT-6),3,OS,M1_Open,0.00,9,0,0,0,0,NA,6.244,NA,NA,NA,no_compile
+LLM_ChatGPT_1_OS,LLM,ChatGPT (GPT-6),1,OS,M1_Open,0.00,10,0,0,0,0,NA,6.331,NA,NA,NA,no_compile
+LLM_ChatGPT_3_OS,LLM,ChatGPT (GPT-6),3,OS,M1_Open,0.00,10,0,0,0,0,NA,6.331,NA,NA,NA,no_compile
+RuleBasedController,Rule,Rule-based,NA,NA,M1_Open,0.00,1,1,0,0,0,7.164,6.480,0.9045,26.36,5.0,goal
+Bug2Controller,Bug2,Bug2,NA,NA,M1_Open,0.00,1,0,1,0,0,5.146,6.480,NA,28.50,0.0,collision
+LLM_ChatGPT_2_OS,LLM,ChatGPT (GPT-6),2,OS,M1_Open,0.00,1,1,0,0,0,6.979,6.480,0.9285,35.82,19.5,goal
+LLM_ChatGPT_2_FB,LLM,ChatGPT (GPT-6),2,FB,M1_Open,0.00,1,1,0,0,0,7.827,6.480,0.8279,46.10,6.8,goal
+LLM_ChatGPT_1_FB,LLM,ChatGPT (GPT-6),1,FB,M1_Open,0.00,1,0,0,1,0,1.275,6.480,NA,60.00,28.2,timeout
+LLM_ChatGPT_3_FB,LLM,ChatGPT (GPT-6),3,FB,M1_Open,0.00,1,0,0,1,0,7.628,6.480,NA,60.00,5.4,timeout
+LLM_ChatGPT_4_FB,LLM,ChatGPT (GPT-6),4,FB,M1_Open,0.00,1,0,0,1,0,5.315,6.480,NA,60.00,29.6,timeout
+LLM_ChatGPT_4_OS,LLM,ChatGPT (GPT-6),4,OS,M1_Open,0.00,1,0,0,1,0,0.728,6.480,NA,60.00,22.6,timeout
+LLM_Claude_1_FB,LLM,Claude Opus 5.5,1,FB,M1_Open,0.00,1,1,0,0,0,6.957,6.480,0.9314,34.50,8.6,goal
+LLM_Claude_1_OS,LLM,Claude Opus 5.5,1,OS,M1_Open,0.00,1,1,0,0,0,6.957,6.480,0.9314,34.50,8.6,goal
+LLM_ChatGPT_6_FB,LLM,ChatGPT (GPT-6),6,FB,M1_Open,0.00,1,0,0,1,0,8.602,6.480,NA,60.00,15.9,timeout
+LLM_ChatGPT_6_OS,LLM,ChatGPT (GPT-6),6,OS,M1_Open,0.00,1,0,0,1,0,7.143,6.480,NA,60.00,11.7,timeout
+LLM_Claude_3_FB,LLM,Claude Opus 5.5,3,FB,M1_Open,0.00,1,1,0,0,0,7.128,6.480,0.9091,30.54,8.5,goal
+LLM_Claude_3_OS,LLM,Claude Opus 5.5,3,OS,M1_Open,0.00,1,1,0,0,0,6.997,6.480,0.9260,30.72,2.1,goal
+LLM_Claude_2_FB,LLM,Claude Opus 5.5,2,FB,M1_Open,0.00,1,1,0,0,0,6.866,6.480,0.9438,35.78,6.8,goal
+LLM_Claude_2_OS,LLM,Claude Opus 5.5,2,OS,M1_Open,0.00,1,1,0,0,0,6.866,6.480,0.9438,35.78,6.8,goal
+LLM_Claude_4_FB,LLM,Claude Opus 5.5,4,FB,M1_Open,0.00,1,1,0,0,0,7.002,6.480,0.9255,32.26,10.3,goal
+LLM_Claude_4_OS,LLM,Claude Opus 5.5,4,OS,M1_Open,0.00,1,1,0,0,0,7.002,6.480,0.9255,32.26,10.3,goal
+LLM_Claude_5_FB,LLM,Claude Opus 5.5,5,FB,M1_Open,0.00,1,1,0,0,0,6.912,6.480,0.9375,30.58,7.5,goal
+LLM_Claude_5_OS,LLM,Claude Opus 5.5,5,OS,M1_Open,0.00,1,1,0,0,0,6.912,6.480,0.9375,30.58,7.5,goal
+LLM_Gemini_1_FB,LLM,Gemini (Auto mode),1,FB,M1_Open,0.00,1,1,0,0,0,7.404,6.480,0.8752,31.46,15.9,goal
+LLM_Gemini_2_OS,LLM,Gemini (Auto mode),2,OS,M1_Open,0.00,1,1,0,0,0,6.969,6.480,0.9298,34.38,17.4,goal
+LLM_Gemini_1_OS,LLM,Gemini (Auto mode),1,OS,M1_Open,0.00,1,1,0,0,0,8.061,6.480,0.8039,41.16,13.9,goal
+LLM_Gemini_3_FB,LLM,Gemini (Auto mode),3,FB,M1_Open,0.00,1,1,0,0,0,8.676,6.480,0.7468,39.76,16.7,goal
+LLM_Gemini_3_OS,LLM,Gemini (Auto mode),3,OS,M1_Open,0.00,1,1,0,0,0,8.291,6.480,0.7816,38.34,21.5,goal
+LLM_Gemini_2_FB,LLM,Gemini (Auto mode),2,FB,M1_Open,0.00,1,0,0,1,0,11.840,6.480,NA,60.00,16.2,timeout
+Bug2Controller,Bug2,Bug2,NA,NA,M1_Open,0.00,2,0,1,0,0,5.370,6.817,NA,29.34,0.0,collision
+RuleBasedController,Rule,Rule-based,NA,NA,M1_Open,0.00,2,1,0,0,0,7.448,6.817,0.9152,27.38,5.8,goal
+LLM_Gemini_4_FB,LLM,Gemini (Auto mode),4,FB,M1_Open,0.00,1,0,0,1,0,7.538,6.480,NA,60.00,29.6,timeout
+LLM_Gemini_4_OS,LLM,Gemini (Auto mode),4,OS,M1_Open,0.00,1,0,0,1,0,8.541,6.480,NA,60.00,22.8,timeout
+LLM_Gemini_5_FB,LLM,Gemini (Auto mode),5,FB,M1_Open,0.00,1,0,0,1,0,7.176,6.480,NA,60.00,16.1,timeout
+LLM_Gemini_5_OS,LLM,Gemini (Auto mode),5,OS,M1_Open,0.00,1,0,0,1,0,6.386,6.480,NA,60.00,7.0,timeout
+LLM_ChatGPT_2_OS,LLM,ChatGPT (GPT-6),2,OS,M1_Open,0.00,2,1,0,0,0,7.284,6.817,0.9359,37.42,5.9,goal
+LLM_ChatGPT_2_FB,LLM,ChatGPT (GPT-6),2,FB,M1_Open,0.00,2,1,0,0,0,8.132,6.817,0.8383,49.02,5.9,goal
+LLM_ChatGPT_1_FB,LLM,ChatGPT (GPT-6),1,FB,M1_Open,0.00,2,0,0,1,0,0.005,6.817,NA,60.00,5.4,timeout
+LLM_ChatGPT_3_FB,LLM,ChatGPT (GPT-6),3,FB,M1_Open,0.00,2,0,0,1,0,3.388,6.817,NA,60.00,5.4,timeout
+LLM_Claude_1_FB,LLM,Claude Opus 5.5,1,FB,M1_Open,0.00,2,1,0,0,0,7.282,6.817,0.9361,35.44,5.9,goal
+LLM_ChatGPT_4_FB,LLM,ChatGPT (GPT-6),4,FB,M1_Open,0.00,2,0,0,1,0,5.334,6.817,NA,60.00,5.9,timeout
+LLM_ChatGPT_4_OS,LLM,ChatGPT (GPT-6),4,OS,M1_Open,0.00,2,0,0,1,0,7.133,6.817,NA,60.00,5.9,timeout
+LLM_Claude_1_OS,LLM,Claude Opus 5.5,1,OS,M1_Open,0.00,2,1,0,0,0,7.282,6.817,0.9361,35.44,5.9,goal
+LLM_ChatGPT_6_FB,LLM,ChatGPT (GPT-6),6,FB,M1_Open,0.00,2,0,0,1,0,8.665,6.817,NA,60.00,5.9,timeout
+LLM_Claude_2_FB,LLM,Claude Opus 5.5,2,FB,M1_Open,0.00,2,1,0,0,0,7.190,6.817,0.9481,36.28,5.9,goal
+LLM_Claude_3_OS,LLM,Claude Opus 5.5,3,OS,M1_Open,0.00,2,0,1,0,0,2.316,6.817,NA,12.10,0.0,collision
+LLM_ChatGPT_6_OS,LLM,ChatGPT (GPT-6),6,OS,M1_Open,0.00,2,0,0,1,0,7.349,6.817,NA,60.00,5.9,timeout
+LLM_Claude_3_FB,LLM,Claude Opus 5.5,3,FB,M1_Open,0.00,2,1,0,0,0,7.394,6.817,0.9219,31.38,5.9,goal
+LLM_Claude_2_OS,LLM,Claude Opus 5.5,2,OS,M1_Open,0.00,2,1,0,0,0,7.190,6.817,0.9481,36.28,5.9,goal
+LLM_Claude_4_FB,LLM,Claude Opus 5.5,4,FB,M1_Open,0.00,2,1,0,0,0,7.317,6.817,0.9317,33.16,5.9,goal
+LLM_Claude_5_FB,LLM,Claude Opus 5.5,5,FB,M1_Open,0.00,2,1,0,0,0,7.229,6.817,0.9430,30.92,5.9,goal
+LLM_Claude_4_OS,LLM,Claude Opus 5.5,4,OS,M1_Open,0.00,2,1,0,0,0,7.317,6.817,0.9317,33.16,5.9,goal
+LLM_Claude_5_OS,LLM,Claude Opus 5.5,5,OS,M1_Open,0.00,2,1,0,0,0,7.229,6.817,0.9430,30.92,5.9,goal
+LLM_Gemini_1_FB,LLM,Gemini (Auto mode),1,FB,M1_Open,0.00,2,1,0,0,0,7.765,6.817,0.8779,32.68,5.9,goal
+LLM_Gemini_1_OS,LLM,Gemini (Auto mode),1,OS,M1_Open,0.00,2,1,0,0,0,8.355,6.817,0.8159,43.10,5.9,goal
+LLM_Gemini_2_OS,LLM,Gemini (Auto mode),2,OS,M1_Open,0.00,2,1,0,0,0,7.283,6.817,0.9360,35.10,5.9,goal
+LLM_Gemini_3_OS,LLM,Gemini (Auto mode),3,OS,M1_Open,0.00,2,1,0,0,0,8.633,6.817,0.7897,40.22,5.7,goal
+LLM_Gemini_3_FB,LLM,Gemini (Auto mode),3,FB,M1_Open,0.00,2,1,0,0,0,9.016,6.817,0.7561,41.50,5.9,goal
+LLM_Gemini_2_FB,LLM,Gemini (Auto mode),2,FB,M1_Open,0.00,2,0,0,1,0,11.635,6.817,NA,60.00,5.9,timeout
+Bug2Controller,Bug2,Bug2,NA,NA,M1_Open,0.00,3,0,1,0,0,4.953,6.539,NA,27.62,0.0,collision
+LLM_Gemini_4_FB,LLM,Gemini (Auto mode),4,FB,M1_Open,0.00,2,0,0,1,0,7.613,6.817,NA,60.00,5.9,timeout
+LLM_Gemini_4_OS,LLM,Gemini (Auto mode),4,OS,M1_Open,0.00,2,0,0,1,0,8.723,6.817,NA,60.00,5.9,timeout
+RuleBasedController,Rule,Rule-based,NA,NA,M1_Open,0.00,3,1,0,0,0,7.230,6.539,0.9044,26.60,6.3,goal
+LLM_ChatGPT_2_FB,LLM,ChatGPT (GPT-6),2,FB,M1_Open,0.00,3,0,1,0,0,2.091,6.539,NA,14.36,0.0,collision
+LLM_Gemini_5_FB,LLM,Gemini (Auto mode),5,FB,M1_Open,0.00,2,0,0,1,0,7.398,6.817,NA,60.00,5.9,timeout
+LLM_Gemini_5_OS,LLM,Gemini (Auto mode),5,OS,M1_Open,0.00,2,1,0,0,0,7.254,6.817,0.9398,51.38,5.9,goal
+LLM_ChatGPT_2_OS,LLM,ChatGPT (GPT-6),2,OS,M1_Open,0.00,3,1,0,0,0,7.043,6.539,0.9284,35.74,15.1,goal
+LLM_ChatGPT_1_FB,LLM,ChatGPT (GPT-6),1,FB,M1_Open,0.00,3,0,0,1,0,1.263,6.539,NA,60.00,14.5,timeout
+LLM_Claude_1_FB,LLM,Claude Opus 5.5,1,FB,M1_Open,0.00,3,1,0,0,0,7.104,6.539,0.9205,36.20,4.0,goal
+LLM_ChatGPT_3_FB,LLM,ChatGPT (GPT-6),3,FB,M1_Open,0.00,3,0,0,1,0,7.813,6.539,NA,60.00,15.1,timeout
+LLM_ChatGPT_4_FB,LLM,ChatGPT (GPT-6),4,FB,M1_Open,0.00,3,0,0,1,0,5.450,6.539,NA,60.00,15.1,timeout
+LLM_ChatGPT_4_OS,LLM,ChatGPT (GPT-6),4,OS,M1_Open,0.00,3,0,0,1,0,4.244,6.539,NA,60.00,15.1,timeout
+LLM_ChatGPT_6_FB,LLM,ChatGPT (GPT-6),6,FB,M1_Open,0.00,3,0,0,1,0,7.404,6.539,NA,60.00,7.6,timeout
+LLM_Claude_1_OS,LLM,Claude Opus 5.5,1,OS,M1_Open,0.00,3,1,0,0,0,7.104,6.539,0.9205,36.20,4.0,goal
+LLM_ChatGPT_6_OS,LLM,ChatGPT (GPT-6),6,OS,M1_Open,0.00,3,0,0,1,0,7.335,6.539,NA,60.00,13.1,timeout
+LLM_Claude_2_FB,LLM,Claude Opus 5.5,2,FB,M1_Open,0.00,3,1,0,0,0,6.983,6.539,0.9364,35.10,7.5,goal
+LLM_Claude_2_OS,LLM,Claude Opus 5.5,2,OS,M1_Open,0.00,3,1,0,0,0,6.983,6.539,0.9364,35.10,7.5,goal
+LLM_Claude_3_FB,LLM,Claude Opus 5.5,3,FB,M1_Open,0.00,3,1,0,0,0,7.072,6.539,0.9246,29.80,8.8,goal
+LLM_Claude_3_OS,LLM,Claude Opus 5.5,3,OS,M1_Open,0.00,3,1,0,0,0,7.008,6.539,0.9331,30.88,3.1,goal
+LLM_Claude_5_FB,LLM,Claude Opus 5.5,5,FB,M1_Open,0.00,3,1,0,0,0,7.019,6.539,0.9316,30.58,7.5,goal
+LLM_Claude_5_OS,LLM,Claude Opus 5.5,5,OS,M1_Open,0.00,3,1,0,0,0,7.019,6.539,0.9316,30.58,7.5,goal
+LLM_Claude_4_FB,LLM,Claude Opus 5.5,4,FB,M1_Open,0.00,3,1,0,0,0,7.103,6.539,0.9205,32.74,9.8,goal
+LLM_Claude_4_OS,LLM,Claude Opus 5.5,4,OS,M1_Open,0.00,3,1,0,0,0,7.103,6.539,0.9205,32.74,9.8,goal
+LLM_Gemini_1_FB,LLM,Gemini (Auto mode),1,FB,M1_Open,0.00,3,1,0,0,0,7.441,6.539,0.8788,31.50,15.1,goal
+LLM_Gemini_2_OS,LLM,Gemini (Auto mode),2,OS,M1_Open,0.00,3,1,0,0,0,7.506,6.539,0.8711,35.68,14.2,goal
+LLM_Gemini_3_OS,LLM,Gemini (Auto mode),3,OS,M1_Open,0.00,3,1,0,0,0,8.241,6.539,0.7934,38.12,15.1,goal
+LLM_Gemini_3_FB,LLM,Gemini (Auto mode),3,FB,M1_Open,0.00,3,1,0,0,0,8.797,6.539,0.7433,40.24,15.1,goal
+LLM_Gemini_1_OS,LLM,Gemini (Auto mode),1,OS,M1_Open,0.00,3,0,0,1,0,7.488,6.539,NA,60.00,14.4,timeout
+LLM_Gemini_2_FB,LLM,Gemini (Auto mode),2,FB,M1_Open,0.00,3,0,0,1,0,11.790,6.539,NA,60.00,15.1,timeout
+LLM_Gemini_4_FB,LLM,Gemini (Auto mode),4,FB,M1_Open,0.00,3,0,0,1,0,7.622,6.539,NA,60.00,15.1,timeout
+LLM_Gemini_4_OS,LLM,Gemini (Auto mode),4,OS,M1_Open,0.00,3,0,0,1,0,8.576,6.539,NA,60.00,15.1,timeout
+LLM_ChatGPT_2_FB,LLM,ChatGPT (GPT-6),2,FB,M1_Open,0.00,4,0,1,0,0,2.089,6.519,NA,14.24,0.0,collision
+Bug2Controller,Bug2,Bug2,NA,NA,M1_Open,0.00,4,0,1,0,0,4.878,6.519,NA,27.34,0.0,collision
+RuleBasedController,Rule,Rule-based,NA,NA,M1_Open,0.00,4,1,0,0,0,7.506,6.519,0.8685,28.48,10.2,goal
+LLM_Gemini_5_FB,LLM,Gemini (Auto mode),5,FB,M1_Open,0.00,3,0,0,1,0,7.196,6.539,NA,60.00,15.1,timeout
+LLM_Gemini_5_OS,LLM,Gemini (Auto mode),5,OS,M1_Open,0.00,3,1,0,0,0,7.209,6.539,0.9070,46.82,3.6,goal
+LLM_ChatGPT_2_OS,LLM,ChatGPT (GPT-6),2,OS,M1_Open,0.00,4,1,0,0,0,7.027,6.519,0.9277,35.90,15.7,goal
+LLM_ChatGPT_1_FB,LLM,ChatGPT (GPT-6),1,FB,M1_Open,0.00,4,0,0,1,0,1.178,6.519,NA,60.00,14.5,timeout
+LLM_Claude_1_FB,LLM,Claude Opus 5.5,1,FB,M1_Open,0.00,4,1,0,0,0,7.074,6.519,0.9216,35.96,6.3,goal
+LLM_ChatGPT_3_FB,LLM,ChatGPT (GPT-6),3,FB,M1_Open,0.00,4,0,0,1,0,7.885,6.519,NA,60.00,15.7,timeout
+LLM_ChatGPT_4_FB,LLM,ChatGPT (GPT-6),4,FB,M1_Open,0.00,4,0,0,1,0,5.473,6.519,NA,60.00,15.7,timeout
+LLM_ChatGPT_4_OS,LLM,ChatGPT (GPT-6),4,OS,M1_Open,0.00,4,0,0,1,0,4.248,6.519,NA,60.00,15.7,timeout
+LLM_ChatGPT_6_FB,LLM,ChatGPT (GPT-6),6,FB,M1_Open,0.00,4,0,0,1,0,7.481,6.519,NA,60.00,6.6,timeout
+LLM_ChatGPT_6_OS,LLM,ChatGPT (GPT-6),6,OS,M1_Open,0.00,4,0,0,1,0,6.843,6.519,NA,60.00,12.6,timeout
+LLM_Claude_1_OS,LLM,Claude Opus 5.5,1,OS,M1_Open,0.00,4,1,0,0,0,7.074,6.519,0.9216,35.96,6.3,goal
+LLM_Claude_2_FB,LLM,Claude Opus 5.5,2,FB,M1_Open,0.00,4,1,0,0,0,6.965,6.519,0.9359,35.02,7.3,goal
+LLM_Claude_2_OS,LLM,Claude Opus 5.5,2,OS,M1_Open,0.00,4,1,0,0,0,6.965,6.519,0.9359,35.02,7.3,goal
+LLM_Claude_3_FB,LLM,Claude Opus 5.5,3,FB,M1_Open,0.00,4,1,0,0,0,7.585,6.519,0.8595,32.46,13.0,goal
+LLM_Claude_3_OS,LLM,Claude Opus 5.5,3,OS,M1_Open,0.00,4,1,0,0,0,6.987,6.519,0.9330,30.88,3.0,goal
+LLM_Claude_4_FB,LLM,Claude Opus 5.5,4,FB,M1_Open,0.00,4,1,0,0,0,7.090,6.519,0.9195,32.74,9.7,goal
+LLM_Claude_5_FB,LLM,Claude Opus 5.5,5,FB,M1_Open,0.00,4,1,0,0,0,7.009,6.519,0.9301,30.32,7.7,goal
+LLM_Claude_4_OS,LLM,Claude Opus 5.5,4,OS,M1_Open,0.00,4,1,0,0,0,7.090,6.519,0.9195,32.74,9.7,goal
+LLM_Claude_5_OS,LLM,Claude Opus 5.5,5,OS,M1_Open,0.00,4,1,0,0,0,7.009,6.519,0.9301,30.32,7.7,goal
+LLM_Gemini_1_FB,LLM,Gemini (Auto mode),1,FB,M1_Open,0.00,4,1,0,0,0,7.436,6.519,0.8767,31.54,15.7,goal
+LLM_Gemini_2_OS,LLM,Gemini (Auto mode),2,OS,M1_Open,0.00,4,1,0,0,0,7.507,6.519,0.8684,37.86,13.5,goal
+LLM_Gemini_3_OS,LLM,Gemini (Auto mode),3,OS,M1_Open,0.00,4,1,0,0,0,8.226,6.519,0.7925,37.92,15.7,goal
+LLM_Gemini_3_FB,LLM,Gemini (Auto mode),3,FB,M1_Open,0.00,4,1,0,0,0,8.776,6.519,0.7428,40.26,15.7,goal
+LLM_Gemini_1_OS,LLM,Gemini (Auto mode),1,OS,M1_Open,0.00,4,0,0,1,0,7.318,6.519,NA,60.00,14.4,timeout
+LLM_Gemini_2_FB,LLM,Gemini (Auto mode),2,FB,M1_Open,0.00,4,0,0,1,0,11.482,6.519,NA,60.00,15.7,timeout
+LLM_Gemini_4_FB,LLM,Gemini (Auto mode),4,FB,M1_Open,0.00,4,0,0,1,0,7.633,6.519,NA,60.00,15.7,timeout
+LLM_Gemini_4_OS,LLM,Gemini (Auto mode),4,OS,M1_Open,0.00,4,0,0,1,0,8.591,6.519,NA,60.00,15.7,timeout
+RuleBasedController,Rule,Rule-based,NA,NA,M1_Open,0.00,5,1,0,0,0,7.242,6.667,0.9207,26.28,5.8,goal
+Bug2Controller,Bug2,Bug2,NA,NA,M1_Open,0.00,5,0,1,0,0,5.256,6.667,NA,29.58,0.0,collision
+LLM_ChatGPT_2_FB,LLM,ChatGPT (GPT-6),2,FB,M1_Open,0.00,5,0,1,0,0,2.253,6.667,NA,16.58,0.0,collision
+LLM_Gemini_5_FB,LLM,Gemini (Auto mode),5,FB,M1_Open,0.00,4,0,0,1,0,7.197,6.519,NA,60.00,15.7,timeout
+LLM_Gemini_5_OS,LLM,Gemini (Auto mode),5,OS,M1_Open,0.00,4,1,0,0,0,7.198,6.519,0.9057,46.58,3.7,goal
+LLM_ChatGPT_2_OS,LLM,ChatGPT (GPT-6),2,OS,M1_Open,0.00,5,1,0,0,0,7.133,6.667,0.9348,35.98,17.2,goal
+LLM_ChatGPT_1_FB,LLM,ChatGPT (GPT-6),1,FB,M1_Open,0.00,5,0,0,1,0,1.172,6.667,NA,60.00,16.3,timeout
+LLM_Claude_1_FB,LLM,Claude Opus 5.5,1,FB,M1_Open,0.00,5,1,0,0,0,7.123,6.667,0.9360,34.56,8.9,goal
+LLM_ChatGPT_3_FB,LLM,ChatGPT (GPT-6),3,FB,M1_Open,0.00,5,0,0,1,0,5.162,6.667,NA,60.00,17.6,timeout
+LLM_ChatGPT_4_FB,LLM,ChatGPT (GPT-6),4,FB,M1_Open,0.00,5,0,0,1,0,5.334,6.667,NA,60.00,16.8,timeout
+LLM_ChatGPT_4_OS,LLM,ChatGPT (GPT-6),4,OS,M1_Open,0.00,5,0,0,1,0,1.051,6.667,NA,60.00,16.6,timeout
+LLM_ChatGPT_6_FB,LLM,ChatGPT (GPT-6),6,FB,M1_Open,0.00,5,0,0,1,0,8.206,6.667,NA,60.00,7.0,timeout
+LLM_ChatGPT_6_OS,LLM,ChatGPT (GPT-6),6,OS,M1_Open,0.00,5,0,0,1,0,7.371,6.667,NA,60.00,12.8,timeout
+LLM_Claude_1_OS,LLM,Claude Opus 5.5,1,OS,M1_Open,0.00,5,1,0,0,0,7.123,6.667,0.9360,34.56,8.9,goal
+LLM_Claude_3_OS,LLM,Claude Opus 5.5,3,OS,M1_Open,0.00,5,0,1,0,0,2.192,6.667,NA,11.70,0.0,collision
+LLM_Claude_2_FB,LLM,Claude Opus 5.5,2,FB,M1_Open,0.00,5,1,0,0,0,7.026,6.667,0.9490,34.60,7.4,goal
+LLM_Claude_2_OS,LLM,Claude Opus 5.5,2,OS,M1_Open,0.00,5,1,0,0,0,7.026,6.667,0.9490,34.60,7.4,goal
+LLM_Claude_3_FB,LLM,Claude Opus 5.5,3,FB,M1_Open,0.00,5,1,0,0,0,7.269,6.667,0.9172,31.00,8.7,goal
+LLM_Claude_4_FB,LLM,Claude Opus 5.5,4,FB,M1_Open,0.00,5,1,0,0,0,7.146,6.667,0.9330,32.68,9.6,goal
+LLM_Claude_5_FB,LLM,Claude Opus 5.5,5,FB,M1_Open,0.00,5,1,0,0,0,7.067,6.667,0.9434,30.62,7.7,goal
+LLM_Claude_5_OS,LLM,Claude Opus 5.5,5,OS,M1_Open,0.00,5,1,0,0,0,7.067,6.667,0.9434,30.62,7.7,goal
+LLM_Claude_4_OS,LLM,Claude Opus 5.5,4,OS,M1_Open,0.00,5,1,0,0,0,7.146,6.667,0.9330,32.68,9.6,goal
+LLM_Gemini_1_FB,LLM,Gemini (Auto mode),1,FB,M1_Open,0.00,5,1,0,0,0,7.411,6.667,0.8996,31.68,14.7,goal
+LLM_Gemini_1_OS,LLM,Gemini (Auto mode),1,OS,M1_Open,0.00,5,1,0,0,0,8.214,6.667,0.8117,41.60,15.3,goal
+LLM_Gemini_2_OS,LLM,Gemini (Auto mode),2,OS,M1_Open,0.00,5,1,0,0,0,7.132,6.667,0.9349,34.62,17.2,goal
+LLM_Gemini_3_OS,LLM,Gemini (Auto mode),3,OS,M1_Open,0.00,5,1,0,0,0,8.524,6.667,0.7822,39.34,17.4,goal
+LLM_Gemini_3_FB,LLM,Gemini (Auto mode),3,FB,M1_Open,0.00,5,1,0,0,0,9.134,6.667,0.7300,41.92,16.7,goal
+LLM_Gemini_2_FB,LLM,Gemini (Auto mode),2,FB,M1_Open,0.00,5,0,0,1,0,10.561,6.667,NA,60.00,13.6,timeout
+Bug2Controller,Bug2,Bug2,NA,NA,M1_Open,0.00,6,0,1,0,0,4.800,6.183,NA,27.46,0.0,collision
+LLM_Gemini_4_FB,LLM,Gemini (Auto mode),4,FB,M1_Open,0.00,5,0,0,1,0,7.550,6.667,NA,60.00,17.6,timeout
+LLM_Gemini_4_OS,LLM,Gemini (Auto mode),4,OS,M1_Open,0.00,5,0,0,1,0,8.666,6.667,NA,60.00,17.5,timeout
+LLM_ChatGPT_2_FB,LLM,ChatGPT (GPT-6),2,FB,M1_Open,0.00,6,0,1,0,0,1.750,6.183,NA,13.04,0.0,collision
+RuleBasedController,Rule,Rule-based,NA,NA,M1_Open,0.00,6,1,0,0,0,6.831,6.183,0.9052,25.16,4.7,goal
+LLM_Gemini_5_FB,LLM,Gemini (Auto mode),5,FB,M1_Open,0.00,5,0,0,1,0,7.831,6.667,NA,60.00,14.6,timeout
+LLM_Gemini_5_OS,LLM,Gemini (Auto mode),5,OS,M1_Open,0.00,5,1,0,0,0,7.098,6.667,0.9393,51.88,8.7,goal
+LLM_ChatGPT_2_OS,LLM,ChatGPT (GPT-6),2,OS,M1_Open,0.00,6,1,0,0,0,6.664,6.183,0.9279,34.18,20.4,goal
+LLM_ChatGPT_1_FB,LLM,ChatGPT (GPT-6),1,FB,M1_Open,0.00,6,0,0,1,0,1.376,6.183,NA,60.00,44.3,timeout
+LLM_Claude_1_FB,LLM,Claude Opus 5.5,1,FB,M1_Open,0.00,6,1,0,0,0,6.674,6.183,0.9265,34.06,8.8,goal
+LLM_ChatGPT_3_FB,LLM,ChatGPT (GPT-6),3,FB,M1_Open,0.00,6,0,0,1,0,4.726,6.183,NA,60.00,24.6,timeout
+LLM_ChatGPT_4_FB,LLM,ChatGPT (GPT-6),4,FB,M1_Open,0.00,6,0,0,1,0,5.065,6.183,NA,60.00,29.8,timeout
+LLM_ChatGPT_4_OS,LLM,ChatGPT (GPT-6),4,OS,M1_Open,0.00,6,0,0,1,0,4.960,6.183,NA,60.00,17.1,timeout
+LLM_Claude_1_OS,LLM,Claude Opus 5.5,1,OS,M1_Open,0.00,6,1,0,0,0,6.674,6.183,0.9265,34.06,8.8,goal
+LLM_ChatGPT_6_FB,LLM,ChatGPT (GPT-6),6,FB,M1_Open,0.00,6,0,0,1,0,8.519,6.183,NA,60.00,15.6,timeout
+LLM_ChatGPT_6_OS,LLM,ChatGPT (GPT-6),6,OS,M1_Open,0.00,6,0,0,1,0,7.099,6.183,NA,60.00,12.7,timeout
+LLM_Claude_2_FB,LLM,Claude Opus 5.5,2,FB,M1_Open,0.00,6,1,0,0,0,6.590,6.183,0.9383,33.40,7.5,goal
+LLM_Claude_2_OS,LLM,Claude Opus 5.5,2,OS,M1_Open,0.00,6,1,0,0,0,6.590,6.183,0.9383,33.40,7.5,goal
+LLM_Claude_3_FB,LLM,Claude Opus 5.5,3,FB,M1_Open,0.00,6,1,0,0,0,6.812,6.183,0.9078,29.44,8.5,goal
+LLM_Claude_4_FB,LLM,Claude Opus 5.5,4,FB,M1_Open,0.00,6,1,0,0,0,6.711,6.183,0.9214,31.24,10.1,goal
+LLM_Claude_5_FB,LLM,Claude Opus 5.5,5,FB,M1_Open,0.00,6,1,0,0,0,6.629,6.183,0.9328,29.30,7.9,goal
+LLM_Claude_3_OS,LLM,Claude Opus 5.5,3,OS,M1_Open,0.00,6,1,0,0,0,7.203,6.183,0.8585,32.86,2.8,goal
+LLM_Claude_4_OS,LLM,Claude Opus 5.5,4,OS,M1_Open,0.00,6,1,0,0,0,6.711,6.183,0.9214,31.24,10.1,goal
+LLM_Claude_5_OS,LLM,Claude Opus 5.5,5,OS,M1_Open,0.00,6,1,0,0,0,6.629,6.183,0.9328,29.30,7.9,goal
+LLM_Gemini_1_FB,LLM,Gemini (Auto mode),1,FB,M1_Open,0.00,6,1,0,0,0,7.032,6.183,0.8794,30.22,17.2,goal
+LLM_Gemini_1_OS,LLM,Gemini (Auto mode),1,OS,M1_Open,0.00,6,1,0,0,0,7.752,6.183,0.7977,40.54,15.5,goal
+LLM_Gemini_2_OS,LLM,Gemini (Auto mode),2,OS,M1_Open,0.00,6,1,0,0,0,6.678,6.183,0.9259,33.26,17.3,goal
+LLM_Gemini_3_OS,LLM,Gemini (Auto mode),3,OS,M1_Open,0.00,6,1,0,0,0,7.947,6.183,0.7781,37.04,21.2,goal
+LLM_Gemini_3_FB,LLM,Gemini (Auto mode),3,FB,M1_Open,0.00,6,1,0,0,0,8.448,6.183,0.7319,38.92,17.1,goal
+LLM_Gemini_2_FB,LLM,Gemini (Auto mode),2,FB,M1_Open,0.00,6,0,0,1,0,11.786,6.183,NA,60.00,15.8,timeout
+Bug2Controller,Bug2,Bug2,NA,NA,M1_Open,0.00,7,0,1,0,0,4.494,5.946,NA,26.68,0.0,collision
+LLM_Gemini_4_FB,LLM,Gemini (Auto mode),4,FB,M1_Open,0.00,6,0,0,1,0,7.374,6.183,NA,60.00,44.3,timeout
+RuleBasedController,Rule,Rule-based,NA,NA,M1_Open,0.00,7,1,0,0,0,6.558,5.946,0.9066,24.10,5.8,goal
+LLM_Gemini_4_OS,LLM,Gemini (Auto mode),4,OS,M1_Open,0.00,6,0,0,1,0,8.439,6.183,NA,60.00,23.1,timeout
+LLM_Gemini_5_FB,LLM,Gemini (Auto mode),5,FB,M1_Open,0.00,6,0,0,1,0,6.883,6.183,NA,60.00,13.9,timeout
+LLM_Gemini_5_OS,LLM,Gemini (Auto mode),5,OS,M1_Open,0.00,6,1,0,0,0,6.890,6.183,0.8974,46.82,3.8,goal
+LLM_ChatGPT_2_OS,LLM,ChatGPT (GPT-6),2,OS,M1_Open,0.00,7,1,0,0,0,6.402,5.946,0.9287,31.76,21.7,goal
+LLM_ChatGPT_1_FB,LLM,ChatGPT (GPT-6),1,FB,M1_Open,0.00,7,0,0,1,0,1.217,5.946,NA,60.00,66.2,timeout
+LLM_ChatGPT_4_OS,LLM,ChatGPT (GPT-6),4,OS,M1_Open,0.00,7,0,1,0,0,4.302,5.946,NA,36.36,0.0,collision
+LLM_ChatGPT_2_FB,LLM,ChatGPT (GPT-6),2,FB,M1_Open,0.00,7,1,0,0,0,7.866,5.946,0.7559,49.68,7.0,goal
+LLM_ChatGPT_3_FB,LLM,ChatGPT (GPT-6),3,FB,M1_Open,0.00,7,0,0,1,0,4.154,5.946,NA,60.00,6.4,timeout
+LLM_ChatGPT_4_FB,LLM,ChatGPT (GPT-6),4,FB,M1_Open,0.00,7,0,0,1,0,5.203,5.946,NA,60.00,59.4,timeout
+LLM_Claude_1_FB,LLM,Claude Opus 5.5,1,FB,M1_Open,0.00,7,1,0,0,0,6.402,5.946,0.9287,32.26,8.7,goal
+LLM_ChatGPT_6_FB,LLM,ChatGPT (GPT-6),6,FB,M1_Open,0.00,7,0,0,1,0,8.142,5.946,NA,60.00,7.2,timeout
+LLM_Claude_3_OS,LLM,Claude Opus 5.5,3,OS,M1_Open,0.00,7,0,1,0,0,1.472,5.946,NA,9.42,0.0,collision
+LLM_Claude_1_OS,LLM,Claude Opus 5.5,1,OS,M1_Open,0.00,7,1,0,0,0,6.402,5.946,0.9287,32.26,8.7,goal
+LLM_Claude_2_FB,LLM,Claude Opus 5.5,2,FB,M1_Open,0.00,7,1,0,0,0,6.304,5.946,0.9431,32.58,6.8,goal
+LLM_Claude_2_OS,LLM,Claude Opus 5.5,2,OS,M1_Open,0.00,7,1,0,0,0,6.304,5.946,0.9431,32.58,6.8,goal
+LLM_ChatGPT_6_OS,LLM,ChatGPT (GPT-6),6,OS,M1_Open,0.00,7,0,0,1,0,7.067,5.946,NA,60.00,13.5,timeout
+LLM_Claude_3_FB,LLM,Claude Opus 5.5,3,FB,M1_Open,0.00,7,1,0,0,0,6.624,5.946,0.8976,28.58,8.9,goal
+LLM_Claude_4_FB,LLM,Claude Opus 5.5,4,FB,M1_Open,0.00,7,1,0,0,0,6.453,5.946,0.9214,30.02,15.9,goal
+LLM_Claude_5_FB,LLM,Claude Opus 5.5,5,FB,M1_Open,0.00,7,1,0,0,0,6.348,5.946,0.9367,28.00,7.8,goal
+LLM_Claude_5_OS,LLM,Claude Opus 5.5,5,OS,M1_Open,0.00,7,1,0,0,0,6.348,5.946,0.9367,28.00,7.8,goal
+LLM_Claude_4_OS,LLM,Claude Opus 5.5,4,OS,M1_Open,0.00,7,1,0,0,0,6.453,5.946,0.9214,30.02,15.9,goal
+LLM_Gemini_1_FB,LLM,Gemini (Auto mode),1,FB,M1_Open,0.00,7,1,0,0,0,6.718,5.946,0.8851,29.14,14.4,goal
+LLM_Gemini_1_OS,LLM,Gemini (Auto mode),1,OS,M1_Open,0.00,7,1,0,0,0,7.478,5.946,0.7951,38.78,15.4,goal
+LLM_Gemini_2_OS,LLM,Gemini (Auto mode),2,OS,M1_Open,0.00,7,1,0,0,0,6.406,5.946,0.9281,32.02,17.3,goal
+LLM_Gemini_3_FB,LLM,Gemini (Auto mode),3,FB,M1_Open,0.00,7,1,0,0,0,8.283,5.946,0.7178,38.44,16.9,goal
+LLM_Gemini_3_OS,LLM,Gemini (Auto mode),3,OS,M1_Open,0.00,7,1,0,0,0,7.786,5.946,0.7637,36.58,21.1,goal
+LLM_Gemini_2_FB,LLM,Gemini (Auto mode),2,FB,M1_Open,0.00,7,0,0,1,0,11.749,5.946,NA,60.00,14.5,timeout
+Bug2Controller,Bug2,Bug2,NA,NA,M1_Open,0.00,8,0,1,0,0,4.785,6.548,NA,26.40,0.0,collision
+LLM_ChatGPT_2_FB,LLM,ChatGPT (GPT-6),2,FB,M1_Open,0.00,8,0,1,0,0,2.093,6.548,NA,14.20,0.0,collision
+RuleBasedController,Rule,Rule-based,NA,NA,M1_Open,0.00,8,1,0,0,0,7.384,6.548,0.8868,27.48,10.0,goal
+LLM_Gemini_4_FB,LLM,Gemini (Auto mode),4,FB,M1_Open,0.00,7,0,0,1,0,7.192,5.946,NA,60.00,52.3,timeout
+LLM_Gemini_4_OS,LLM,Gemini (Auto mode),4,OS,M1_Open,0.00,7,0,0,1,0,8.262,5.946,NA,60.00,28.6,timeout
+LLM_Gemini_5_FB,LLM,Gemini (Auto mode),5,FB,M1_Open,0.00,7,0,0,1,0,7.876,5.946,NA,60.00,15.6,timeout
+LLM_Gemini_5_OS,LLM,Gemini (Auto mode),5,OS,M1_Open,0.00,7,0,0,1,0,6.070,5.946,NA,60.00,9.5,timeout
+LLM_ChatGPT_2_OS,LLM,ChatGPT (GPT-6),2,OS,M1_Open,0.00,8,1,0,0,0,7.072,6.548,0.9259,36.86,10.0,goal
+LLM_ChatGPT_1_FB,LLM,ChatGPT (GPT-6),1,FB,M1_Open,0.00,8,0,0,1,0,1.070,6.548,NA,60.00,9.7,timeout
+LLM_Claude_1_FB,LLM,Claude Opus 5.5,1,FB,M1_Open,0.00,8,1,0,0,0,7.116,6.548,0.9201,34.56,9.2,goal
+LLM_ChatGPT_3_FB,LLM,ChatGPT (GPT-6),3,FB,M1_Open,0.00,8,0,0,1,0,8.000,6.548,NA,60.00,10.0,timeout
+LLM_Claude_1_OS,LLM,Claude Opus 5.5,1,OS,M1_Open,0.00,8,1,0,0,0,7.116,6.548,0.9201,34.56,9.2,goal
+LLM_ChatGPT_4_FB,LLM,ChatGPT (GPT-6),4,FB,M1_Open,0.00,8,0,0,1,0,5.402,6.548,NA,60.00,10.0,timeout
+LLM_ChatGPT_4_OS,LLM,ChatGPT (GPT-6),4,OS,M1_Open,0.00,8,0,0,1,0,5.263,6.548,NA,60.00,10.0,timeout
+LLM_ChatGPT_6_FB,LLM,ChatGPT (GPT-6),6,FB,M1_Open,0.00,8,0,0,1,0,7.725,6.548,NA,60.00,10.0,timeout
+LLM_ChatGPT_6_OS,LLM,ChatGPT (GPT-6),6,OS,M1_Open,0.00,8,0,0,1,0,7.979,6.548,NA,60.00,10.0,timeout
+LLM_Claude_2_FB,LLM,Claude Opus 5.5,2,FB,M1_Open,0.00,8,1,0,0,0,7.016,6.548,0.9333,35.42,7.4,goal
+LLM_Claude_3_FB,LLM,Claude Opus 5.5,3,FB,M1_Open,0.00,8,1,0,0,0,7.079,6.548,0.9250,30.04,8.6,goal
+LLM_Claude_2_OS,LLM,Claude Opus 5.5,2,OS,M1_Open,0.00,8,1,0,0,0,7.016,6.548,0.9333,35.42,7.4,goal
+LLM_Claude_3_OS,LLM,Claude Opus 5.5,3,OS,M1_Open,0.00,8,1,0,0,0,6.994,6.548,0.9361,30.84,3.9,goal
+LLM_Claude_5_FB,LLM,Claude Opus 5.5,5,FB,M1_Open,0.00,8,1,0,0,0,7.074,6.548,0.9255,30.40,7.8,goal
+LLM_Claude_5_OS,LLM,Claude Opus 5.5,5,OS,M1_Open,0.00,8,1,0,0,0,7.074,6.548,0.9255,30.40,7.8,goal
+LLM_Claude_4_FB,LLM,Claude Opus 5.5,4,FB,M1_Open,0.00,8,1,0,0,0,7.146,6.548,0.9163,33.04,9.0,goal
+LLM_Claude_4_OS,LLM,Claude Opus 5.5,4,OS,M1_Open,0.00,8,1,0,0,0,7.146,6.548,0.9163,33.04,9.0,goal
+LLM_Gemini_1_FB,LLM,Gemini (Auto mode),1,FB,M1_Open,0.00,8,1,0,0,0,7.523,6.548,0.8703,31.96,10.0,goal
+LLM_Gemini_2_OS,LLM,Gemini (Auto mode),2,OS,M1_Open,0.00,8,1,0,0,0,7.423,6.548,0.8821,34.88,10.0,goal
+LLM_Gemini_3_OS,LLM,Gemini (Auto mode),3,OS,M1_Open,0.00,8,1,0,0,0,8.192,6.548,0.7993,37.84,10.0,goal
+LLM_Gemini_3_FB,LLM,Gemini (Auto mode),3,FB,M1_Open,0.00,8,1,0,0,0,8.759,6.548,0.7475,39.90,10.0,goal
+Bug2Controller,Bug2,Bug2,NA,NA,M1_Open,0.00,9,0,1,0,0,1.629,6.244,NA,7.30,0.0,collision
+LLM_Gemini_1_OS,LLM,Gemini (Auto mode),1,OS,M1_Open,0.00,8,0,0,1,0,7.410,6.548,NA,60.00,10.0,timeout
+LLM_Gemini_2_FB,LLM,Gemini (Auto mode),2,FB,M1_Open,0.00,8,0,0,1,0,11.489,6.548,NA,60.00,10.0,timeout
+LLM_Gemini_4_FB,LLM,Gemini (Auto mode),4,FB,M1_Open,0.00,8,0,0,1,0,7.680,6.548,NA,60.00,10.0,timeout
+LLM_Gemini_4_OS,LLM,Gemini (Auto mode),4,OS,M1_Open,0.00,8,0,0,1,0,8.576,6.548,NA,60.00,10.0,timeout
+RuleBasedController,Rule,Rule-based,NA,NA,M1_Open,0.00,9,1,0,0,0,6.789,6.244,0.9197,24.48,6.9,goal
+LLM_Gemini_5_FB,LLM,Gemini (Auto mode),5,FB,M1_Open,0.00,8,0,0,1,0,7.237,6.548,NA,60.00,10.0,timeout
+LLM_Gemini_5_OS,LLM,Gemini (Auto mode),5,OS,M1_Open,0.00,8,1,0,0,0,7.101,6.548,0.9221,49.16,5.2,goal
+LLM_ChatGPT_2_OS,LLM,ChatGPT (GPT-6),2,OS,M1_Open,0.00,9,1,0,0,0,6.683,6.244,0.9343,32.24,21.8,goal
+LLM_ChatGPT_2_FB,LLM,ChatGPT (GPT-6),2,FB,M1_Open,0.00,9,1,0,0,0,6.591,6.244,0.9474,43.16,14.4,goal
+LLM_ChatGPT_4_OS,LLM,ChatGPT (GPT-6),4,OS,M1_Open,0.00,9,0,1,0,0,4.731,6.244,NA,39.20,0.0,collision
+LLM_ChatGPT_1_FB,LLM,ChatGPT (GPT-6),1,FB,M1_Open,0.00,9,0,0,1,0,1.490,6.244,NA,60.00,25.9,timeout
+LLM_ChatGPT_3_FB,LLM,ChatGPT (GPT-6),3,FB,M1_Open,0.00,9,1,0,0,0,6.953,6.244,0.8980,56.48,6.2,goal
+LLM_ChatGPT_4_FB,LLM,ChatGPT (GPT-6),4,FB,M1_Open,0.00,9,0,0,1,0,5.606,6.244,NA,60.00,25.9,timeout
+LLM_Claude_1_FB,LLM,Claude Opus 5.5,1,FB,M1_Open,0.00,9,1,0,0,0,6.601,6.244,0.9459,34.36,9.0,goal
+LLM_ChatGPT_6_FB,LLM,ChatGPT (GPT-6),6,FB,M1_Open,0.00,9,1,0,0,0,8.368,6.244,0.7462,55.48,16.9,goal
+LLM_Claude_1_OS,LLM,Claude Opus 5.5,1,OS,M1_Open,0.00,9,1,0,0,0,6.601,6.244,0.9459,34.36,9.0,goal
+LLM_Claude_2_FB,LLM,Claude Opus 5.5,2,FB,M1_Open,0.00,9,1,0,0,0,6.561,6.244,0.9517,30.68,7.9,goal
+LLM_Claude_2_OS,LLM,Claude Opus 5.5,2,OS,M1_Open,0.00,9,1,0,0,0,6.561,6.244,0.9517,30.68,7.9,goal
+LLM_ChatGPT_6_OS,LLM,ChatGPT (GPT-6),6,OS,M1_Open,0.00,9,0,0,1,0,7.250,6.244,NA,60.00,13.5,timeout
+LLM_Claude_3_FB,LLM,Claude Opus 5.5,3,FB,M1_Open,0.00,9,1,0,0,0,7.515,6.244,0.8308,33.84,14.7,goal
+LLM_Claude_4_FB,LLM,Claude Opus 5.5,4,FB,M1_Open,0.00,9,1,0,0,0,6.632,6.244,0.9415,31.14,9.5,goal
+LLM_Claude_5_FB,LLM,Claude Opus 5.5,5,FB,M1_Open,0.00,9,1,0,0,0,6.580,6.244,0.9490,27.50,7.6,goal
+LLM_Claude_4_OS,LLM,Claude Opus 5.5,4,OS,M1_Open,0.00,9,1,0,0,0,6.632,6.244,0.9415,31.14,9.5,goal
+LLM_Claude_3_OS,LLM,Claude Opus 5.5,3,OS,M1_Open,0.00,9,1,0,0,0,7.272,6.244,0.8586,37.40,4.3,goal
+LLM_Claude_5_OS,LLM,Claude Opus 5.5,5,OS,M1_Open,0.00,9,1,0,0,0,6.580,6.244,0.9490,27.50,7.6,goal
+LLM_Gemini_1_FB,LLM,Gemini (Auto mode),1,FB,M1_Open,0.00,9,1,0,0,0,6.910,6.244,0.9036,30.08,15.0,goal
+LLM_Gemini_1_OS,LLM,Gemini (Auto mode),1,OS,M1_Open,0.00,9,1,0,0,0,7.134,6.244,0.8753,38.18,16.2,goal
+LLM_Gemini_2_OS,LLM,Gemini (Auto mode),2,OS,M1_Open,0.00,9,1,0,0,0,6.634,6.244,0.9411,31.86,17.6,goal
+LLM_Gemini_3_FB,LLM,Gemini (Auto mode),3,FB,M1_Open,0.00,9,1,0,0,0,8.818,6.244,0.7081,40.96,16.4,goal
+LLM_Gemini_3_OS,LLM,Gemini (Auto mode),3,OS,M1_Open,0.00,9,1,0,0,0,8.143,6.244,0.7668,44.70,14.6,goal
+LLM_Gemini_2_FB,LLM,Gemini (Auto mode),2,FB,M1_Open,0.00,9,0,0,1,0,11.074,6.244,NA,60.00,14.6,timeout
+Bug2Controller,Bug2,Bug2,NA,NA,M1_Open,0.00,10,0,1,0,0,4.998,6.331,NA,28.98,0.0,collision
+LLM_Gemini_4_FB,LLM,Gemini (Auto mode),4,FB,M1_Open,0.00,9,0,0,1,0,7.423,6.244,NA,60.00,25.9,timeout
+LLM_Gemini_4_OS,LLM,Gemini (Auto mode),4,OS,M1_Open,0.00,9,0,0,1,0,9.616,6.244,NA,60.00,14.8,timeout
+RuleBasedController,Rule,Rule-based,NA,NA,M1_Open,0.00,10,1,0,0,0,6.876,6.331,0.9208,24.92,7.3,goal
+LLM_Gemini_5_OS,LLM,Gemini (Auto mode),5,OS,M1_Open,0.00,9,1,0,0,0,6.609,6.244,0.9448,43.14,6.7,goal
+LLM_Gemini_5_FB,LLM,Gemini (Auto mode),5,FB,M1_Open,0.00,9,0,0,1,0,6.089,6.244,NA,60.00,15.7,timeout
+LLM_ChatGPT_2_OS,LLM,ChatGPT (GPT-6),2,OS,M1_Open,0.00,10,1,0,0,0,6.758,6.331,0.9369,32.54,21.8,goal
+LLM_ChatGPT_4_OS,LLM,ChatGPT (GPT-6),4,OS,M1_Open,0.00,10,0,1,0,0,4.727,6.331,NA,38.52,0.0,collision
+LLM_ChatGPT_1_FB,LLM,ChatGPT (GPT-6),1,FB,M1_Open,0.00,10,0,0,1,0,1.502,6.331,NA,60.00,27.4,timeout
+LLM_ChatGPT_2_FB,LLM,ChatGPT (GPT-6),2,FB,M1_Open,0.00,10,1,0,0,0,8.521,6.331,0.7430,53.50,13.2,goal
+LLM_ChatGPT_3_FB,LLM,ChatGPT (GPT-6),3,FB,M1_Open,0.00,10,0,0,1,0,6.839,6.331,NA,60.00,26.8,timeout
+LLM_ChatGPT_4_FB,LLM,ChatGPT (GPT-6),4,FB,M1_Open,0.00,10,0,0,1,0,5.472,6.331,NA,60.00,27.4,timeout
+LLM_Claude_1_FB,LLM,Claude Opus 5.5,1,FB,M1_Open,0.00,10,1,0,0,0,6.725,6.331,0.9415,33.96,9.1,goal
+LLM_ChatGPT_6_FB,LLM,ChatGPT (GPT-6),6,FB,M1_Open,0.00,10,0,0,1,0,8.467,6.331,NA,60.00,6.8,timeout
+LLM_ChatGPT_6_OS,LLM,ChatGPT (GPT-6),6,OS,M1_Open,0.00,10,0,0,1,0,7.257,6.331,NA,60.00,12.5,timeout
+LLM_Claude_2_FB,LLM,Claude Opus 5.5,2,FB,M1_Open,0.00,10,1,0,0,0,6.659,6.331,0.9508,32.00,7.6,goal
+LLM_Claude_1_OS,LLM,Claude Opus 5.5,1,OS,M1_Open,0.00,10,1,0,0,0,6.725,6.331,0.9415,33.96,9.1,goal
+LLM_Claude_2_OS,LLM,Claude Opus 5.5,2,OS,M1_Open,0.00,10,1,0,0,0,6.659,6.331,0.9508,32.00,7.6,goal
+LLM_Claude_3_FB,LLM,Claude Opus 5.5,3,FB,M1_Open,0.00,10,1,0,0,0,7.133,6.331,0.8876,30.28,8.5,goal
+LLM_Claude_4_FB,LLM,Claude Opus 5.5,4,FB,M1_Open,0.00,10,1,0,0,0,6.749,6.331,0.9380,30.96,8.9,goal
+LLM_Claude_5_FB,LLM,Claude Opus 5.5,5,FB,M1_Open,0.00,10,1,0,0,0,6.685,6.331,0.9471,28.56,7.6,goal
+LLM_Claude_4_OS,LLM,Claude Opus 5.5,4,OS,M1_Open,0.00,10,1,0,0,0,6.749,6.331,0.9380,30.96,8.9,goal
+LLM_Claude_3_OS,LLM,Claude Opus 5.5,3,OS,M1_Open,0.00,10,1,0,0,0,7.494,6.331,0.8449,34.68,12.6,goal
+LLM_Claude_5_OS,LLM,Claude Opus 5.5,5,OS,M1_Open,0.00,10,1,0,0,0,6.685,6.331,0.9471,28.56,7.6,goal
+LLM_Gemini_1_FB,LLM,Gemini (Auto mode),1,FB,M1_Open,0.00,10,1,0,0,0,7.042,6.331,0.8991,30.18,15.2,goal
+LLM_Gemini_1_OS,LLM,Gemini (Auto mode),1,OS,M1_Open,0.00,10,1,0,0,0,7.246,6.331,0.8738,40.82,13.7,goal
+LLM_Gemini_2_OS,LLM,Gemini (Auto mode),2,OS,M1_Open,0.00,10,1,0,0,0,6.744,6.331,0.9388,32.48,17.5,goal
+LLM_Gemini_3_OS,LLM,Gemini (Auto mode),3,OS,M1_Open,0.00,10,1,0,0,0,8.290,6.331,0.7637,38.72,20.8,goal
+LLM_Gemini_3_FB,LLM,Gemini (Auto mode),3,FB,M1_Open,0.00,10,1,0,0,0,8.690,6.331,0.7285,40.14,16.7,goal
+LLM_Gemini_2_FB,LLM,Gemini (Auto mode),2,FB,M1_Open,0.00,10,0,0,1,0,11.743,6.331,NA,60.00,13.7,timeout
+LLM_Gemini_4_FB,LLM,Gemini (Auto mode),4,FB,M1_Open,0.00,10,0,0,1,0,7.498,6.331,NA,60.00,27.4,timeout
+LLM_Gemini_4_OS,LLM,Gemini (Auto mode),4,OS,M1_Open,0.00,10,0,0,1,0,8.607,6.331,NA,60.00,27.4,timeout
+LLM_Gemini_5_OS,LLM,Gemini (Auto mode),5,OS,M1_Open,0.00,10,1,0,0,0,6.712,6.331,0.9432,46.48,6.4,goal
+LLM_Gemini_5_FB,LLM,Gemini (Auto mode),5,FB,M1_Open,0.00,10,0,0,1,0,8.062,6.331,NA,60.00,14.9,timeout

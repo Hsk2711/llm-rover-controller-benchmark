@@ -51,3 +51,7 @@ date,controller,restarts,seconds,outcome,report
 2026-11-22 23:01:22,Bug2Controller,0,53,ok,"Test report: 5/10 reached the goal, 5 collisions, 0 timeouts (got stuck), 0 runtime errors. Most common failure: hits obstacles head-on."
 2026-11-22 23:02:27,LLM_Gemini_4_FB,0,65,ok,"Test report: 4/10 reached the goal, 0 collisions, 6 timeouts (got stuck), 0 runtime errors. Most common failure: gets stuck in a dead end."
 2026-11-22 23:03:18,LLM_Claude_3_FB,0,51,ok,"Test report: 10/10 reached the goal, 0 collisions, 0 timeouts (got stuck), 0 runtime errors. Most common failure: none."
+2026-11-23 08:09:35,Bug2Controller (noise 0),0,71,ok,"Test report: 4/10 reached the goal, 5 collisions, 1 timeouts (got stuck), 0 runtime errors. Most common failure: hits obstacles head-on."
+2026-11-23 08:10:34,Bug2_Corrected (noise 0),0,55,ok,"Test report: 3/10 reached the goal, 5 collisions, 2 timeouts (got stuck), 0 runtime errors. Most common failure: hits obstacles while turning."
+2026-11-23 08:11:48,Bug2Controller,0,54,ok,"Test report: 5/10 reached the goal, 5 collisions, 0 timeouts (got stuck), 0 runtime errors. Most common failure: hits obstacles head-on."
+2026-11-23 08:12:42,RuleBasedController,0,54,ok,"Test report: 10/10 reached the goal, 0 collisions, 0 timeouts (got stuck), 0 runtime errors. Most common failure: none."

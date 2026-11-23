@@ -2,6 +2,7 @@
 """run_quicktest.py - run the Quick Test of one controller through the open Unity Editor and survive Play-mode stalls.
 
     python tools/run_quicktest.py LLM_Gemini_1_FB
+    python tools/run_quicktest.py Bug2_Corrected --noise 0      (optional sensor noise; default 0.05 = the normal Quick Test)
 
 Start route: Play mode is entered with `editor.playmode start` and the Quick Test is started from inside Play mode (changed 2026-11-22).
 Why: now and then the Editor enters Play mode but the game loop stays on frame 1 and the test never starts (seen ~1 in 3 runs
@@ -50,9 +51,14 @@ def frame():
 
 
 def main():
-    if len(sys.argv) != 2:
+    args = sys.argv[1:]
+    noise = "0.05"
+    if len(args) == 3 and args[1] == "--noise":
+        noise = args[2]
+        args = args[:1]
+    if len(args) != 1:
         sys.exit(__doc__)
-    name = sys.argv[1]
+    name = args[0]
     result = os.path.join("results", "quicktest", name + ".txt")
     start_all = time.time()
     for attempt in range(1, ATTEMPTS + 1):
@@ -72,7 +78,7 @@ def main():
             print("attempt %d: Play mode did not start (frame %s after %d s) - stopping and retrying" % (attempt, f, STALL_SECONDS))
             continue
         mark = time.time()
-        unity("script", "eval", "--code", 'QuickTestWindow.Start("%s"); "started"' % name)
+        unity("script", "eval", "--code", 'QuickTestRunner.DefaultNoise = %sf; QuickTestWindow.Start("%s"); "started"' % (noise, name))
         t0 = time.time()
         last_move = t0
         last_frame = 0
@@ -82,7 +88,7 @@ def main():
                 report = open(result, encoding="utf-8").readline().strip()
                 print(report)
                 print("restarts needed: %d" % (attempt - 1))
-                log_run(name, attempt - 1, time.time() - start_all, "ok", report)
+                log_run(name + ("" if noise == "0.05" else " (noise %s)" % noise), attempt - 1, time.time() - start_all, "ok", report)
                 return 0
             f = frame()                     # also keeps the Editor awake
             if f is not None and f > last_frame + 2:

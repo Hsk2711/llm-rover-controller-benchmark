@@ -43,6 +43,7 @@ public struct QuickRunRecord
 public class QuickTestResult
 {
     public string controller;
+    public float noise = 0.05f;
     public List<QuickRunRecord> runs = new List<QuickRunRecord>();
     public int Count(RunOutcome o) { int n = 0; foreach (var r in runs) if (r.outcome == o) n++; return n; }
     public int RuntimeErrors { get { int n = 0; foreach (var r in runs) if (r.exceptions > 0) n++; return n; } }
@@ -60,7 +61,7 @@ public class QuickTestResult
         var sb = new StringBuilder();
         sb.AppendLine(Report);
         sb.AppendLine();
-        sb.AppendLine("controller: " + controller + "   (practice map seeds 2000-2009, noise 0.05, trial seeds 1-10)");
+        sb.AppendLine("controller: " + controller + "   (practice map seeds 2000-2009, noise " + noise.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) + ", trial seeds 1-10)");
         sb.AppendLine("map_seed trial_seed outcome time_s exceptions failure_label");
         foreach (var r in runs)
             sb.AppendLine(r.mapSeed + " " + r.trialSeed + " " + r.outcome + " " + r.time.ToString("0.0") + " " + r.exceptions + " "
@@ -76,7 +77,8 @@ public class QuickTestRunner : MonoBehaviour
     public const float WindowSeconds = 20f;
 
     public string controllerName;
-    public float noise = 0.05f;          // one of SimConfig.noiseLevels
+    public static float DefaultNoise = 0.05f;   // tools/run_quicktest.py --noise X sets it (used for the Bug2_Corrected validation at noise 0)
+    public float noise = DefaultNoise;          // one of SimConfig.noiseLevels
     public float timeScale = 16f;        // game speed while testing; does not change any result
 
     /// <summary>Raised once, when all runs are done.</summary>
@@ -90,7 +92,7 @@ public class QuickTestRunner : MonoBehaviour
     {
         IsRunning = true;
         float oldScale = Time.timeScale;
-        var result = new QuickTestResult { controller = controllerName };
+        var result = new QuickTestResult { controller = controllerName, noise = noise };
         yield return null; yield return null;             // let every Start() of the scene run first
 
         var loader = FindFirstObjectByType<MapLoader>();

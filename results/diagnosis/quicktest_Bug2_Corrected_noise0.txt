@@ -1,0 +1,14 @@
+Test report: 3/10 reached the goal, 5 collisions, 2 timeouts (got stuck), 0 runtime errors. Most common failure: hits obstacles while turning.
+
+controller: Bug2_Corrected   (practice map seeds 2000-2009, noise 0.00, trial seeds 1-10)
+map_seed trial_seed outcome time_s exceptions failure_label
+2000 1 Collision 4.8 0 hits obstacles head-on
+2001 2 Goal 22.8 0 none
+2002 3 Collision 10.6 0 hits obstacles while turning
+2003 4 Collision 41.9 0 hits obstacles while turning
+2004 5 Collision 13.9 0 hits obstacles while turning
+2005 6 Goal 20.7 0 none
+2006 7 Timeout 60.0 0 gets stuck in a dead end
+2007 8 Collision 24.6 0 hits obstacles while turning
+2008 9 Goal 21.0 0 none
+2009 10 Timeout 60.0 0 gets stuck oscillating

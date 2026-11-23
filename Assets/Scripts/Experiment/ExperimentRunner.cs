@@ -296,8 +296,8 @@ public class ExperimentRunner : MonoBehaviour
             }
             else
             {
-                e.family = name == "Bug2Controller" ? "Bug2" : "Rule";
-                e.label = e.family == "Bug2" ? "Bug2" : "Rule-based";
+                e.family = name == "Bug2Controller" ? "Bug2" : name == "Bug2_Corrected" ? "Bug2C" : "Rule";
+                e.label = e.family == "Bug2" ? "Bug2" : e.family == "Bug2C" ? "Bug2 (corrected)" : "Rule-based";
                 e.attempt = NA; e.condition = NA;
             }
             list.Add(e);

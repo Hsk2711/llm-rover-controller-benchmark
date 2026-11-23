@@ -20,7 +20,7 @@ public static class ControllerRegistry
 
     public const string ExcludedSuffix = "_excluded";
 
-    static readonly string[] BaselineNames = { "RuleBasedController", "Bug2Controller" };
+    static readonly string[] BaselineNames = { "RuleBasedController", "Bug2Controller", "Bug2_Corrected" };   // Bug2_Corrected added in Phase 7 (family Bug2C)
 
     static List<Type> types;
 
