@@ -1,0 +1,1 @@
+run 15360 / 15360, ETA 00:00:00  (98.0 runs/min, arenas 8, timescale 10)  DONE  updated 2026-11-23T11:12:02
