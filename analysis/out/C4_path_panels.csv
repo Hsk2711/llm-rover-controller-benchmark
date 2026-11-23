@@ -1,0 +1,9 @@
+panel,controller,outcome,overall_success_pct
+Rule,RuleBasedController,timeout,
+Bug2,Bug2Controller,timeout,
+ChatGPT best,LLM_ChatGPT_2_OS,timeout,50.0
+ChatGPT worst,LLM_ChatGPT_4_OS,timeout,0.0
+Gemini best,LLM_Gemini_3_OS,goal,64.375
+Gemini worst,LLM_Gemini_4_FB,timeout,0.20833333333333334
+Claude best,LLM_Claude_5_FB,goal,98.54166666666667
+Claude worst,LLM_Claude_3_FB,goal,58.958333333333336
