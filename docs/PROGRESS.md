@@ -33,7 +33,7 @@ Checklist of project phases. Update at the end of each phase.
   positive = counter-clockwise from above (= LEFT). Start zone centre (-2.5,-2.5), goal zone centre (2.5,2.5) on all maps.
 - M1_Open: 5 boxes (0.4-0.6 m), every gap at least 0.98 m. M2_Cluttered: 18 boxes (0.3-0.6 m), every gap (box-box,
   box-wall, box-zone) at least 0.52 m, random placement with a fixed seed. M3_Corridor: 12 thin walls (0.1 m) forming a
-  right-angle staircase corridor 0.5 m wide and 5.5 m long between two sealed 1.75 m x 1.75 m corner rooms (the corridor is
+  right-angle staircase corridor 0.5 m wide and 5.5 m long [REVISED 2026-11-23 to 0.8 m wide and 5.8 m long, see "M3 revision" in Phase 7 step 1] between two sealed 1.75 m x 1.75 m corner rooms (the corridor is
   the only way through). M4_Trap: U-shaped dead end, 1.5 m wide x 1.2 m deep CLEAR inside (walls 0.1 m), centred on the
   start-goal line with the opening towards the start, plus 3 boxes.
 - Shortest collision-free path start centre -> goal centre (0.10 m clearance, grid + straightening): M1 7.18 m,
@@ -507,3 +507,10 @@ Checked in the quick data: LLM_ChatGPT_1_OS and LLM_ChatGPT_3_OS appear in every
 - `hang` rows are NOT counted as timeouts; analysis must count them as failures (success=0) and report how many there are.
 - Tests: stand-in player that freezes on one run (`results/runner_restarts_watchdog_test_hang.csv`): launch 1 stalled, launches 2 and 3 (1 arena) named the same run, run written as hang, launch 4 finished. Real player: a run listed in hang_runs.txt produced a correct `hang` row without simulation.
 - Player rebuilt; full quick re-run (`results/quick_rerun.csv`, 1,024 rows) is identical to `results/quick.csv` in every column. (That re-run's wall-clock time is meaningless: the laptop slept ~2 h. Speed figure stays ~96 runs/min from the first quick run.)
+
+### M3 revision (2026-11-23, Phase 7 step 1, before the main run) - for the paper
+- **What:** map M3_Corridor was changed from a 0.5 m wide corridor (and 0.55 m exit gap) to a **0.8 m wide corridor and 0.8 m exit gap**, 12 thin walls, sealed, centre-line 5.8 m (legs N .75, E 1.65, N 1, E 1.65, N .75; the lane centre moved from x = +-1.5 to +-1.65 m so the lane is flush with the room wall). Done in `analysis/make_maps.py` (`CORR_W`); M1, M2 and M4 assets are byte-identical.
+- **Rule (stated before the main run, not tuned to results):** corridor width = 0.8 m ~ 5 x rover width (0.15 m), giving 0.33 m side clearance, above the 0.25-0.45 m reaction distances typical of the sensor layout; chosen once, before the main run.
+- **Why:** in the quick run (seeds 1-2) M3 was ~0 % for every family. Diagnosis (results/diagnosis/): the map was valid (all 30 spawns reachable, shortest path 6.96-7.84 m), but most controllers never left the start room (they treat anything closer than 0.3-0.5 m as an obstacle and the exit gap was 0.55 m), and the 3 successes took 49-55 s of the 60 s. With 0.5 m only 3 of 96 diagnostic runs (noise 0.05, seeds 1-3, all controllers) reached the goal. Disclose in the paper that M3 was revised once after a quick test, before the main run.
+- **Checks (new M3):** generator checks pass (sealed, no wall in the zones, free path, 12 walls); shortest path start centre -> goal centre 7.23 m (limit 8 m); `results/diagnosis/m3_geometry_check.py` (reads the real asset, rover radius 0.125 m): all 30 spawn poses reachable, shortest paths 6.58 / 7.03 / 7.47 m (min / mean / max).
+- **Archive:** the quick results with the OLD M3 are kept as `results/quick_pre_M3fix.csv` (same for `quick_rerun.csv`, `quick_editor_*.csv`: all old-M3). They stay valid for M1, M2, M4. The quick run must be repeated with the new M3 and a rebuilt player (the player in Build/ still contains the OLD map assets) before tag `phase7-runner-ready` is trusted.

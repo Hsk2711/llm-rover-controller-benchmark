@@ -1,0 +1,2 @@
+controller,family,model_label,attempt,condition,map,noise,seed,success,collision,timeout,exceptions,path_m,straight_m,efficiency,time_s,min_clear_cm,outcome
+LLM_Claude_1_FB,LLM,Claude Opus 5.5,1,FB,M3_Corridor,0.05,1,1,0,0,0,7.214,6.480,0.8983,48.76,3.3,goal

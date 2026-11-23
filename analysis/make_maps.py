@@ -14,6 +14,7 @@ ROOT = Path(__file__).resolve().parent.parent
 MAP_DIR = ROOT / "Assets" / "Maps"
 SCRIPT_GUID = "7c1e5b0a93d44f2e8a6b2d9f4c3e1a70"          # MapDefinition.cs.meta
 
+CORR_W = 0.8                                              # M3 corridor width (inner face to inner face), see map_m3
 HALF = 3.0                                                # arena spans -HALF..+HALF
 ZONE = 1.0                                                # zone size (SimConfig.zoneSize)
 START, GOAL = (-2.5, -2.5), (2.5, 2.5)                    # bottom-left, top-right
@@ -216,10 +217,15 @@ def map_m2():
 
 
 def map_m3():
-    """Corridor: a right-angle staircase (zig-zag) corridor 0.5 m wide and 5.5 m long, built from thin walls, between two
-    sealed corner rooms (1.75 m x 1.75 m, containing the start / goal zones). The corridor is 0.5 m wide between the INNER
-    faces of the walls. Everything outside the rooms and the corridor is sealed off, so the corridor is the only way."""
-    cell, n = 0.25, 24
+    """Corridor: a right-angle staircase (zig-zag) corridor 0.8 m wide and 5.8 m long, built from thin walls, between two
+    sealed corner rooms (1.75 m x 1.75 m, containing the start / goal zones). The corridor is 0.8 m wide between the INNER
+    faces of the walls. Everything outside the rooms and the corridor is sealed off, so the corridor is the only way.
+    REVISION (2026-11-23, after the quick run, BEFORE the main run): the corridor and the exit gap were 0.5 m wide; with 0.5 m
+    only 3 of 96 test runs reached the goal (most controllers never left the start room). RULE: corridor width = 0.8 m
+    ~ 5 x rover width (0.15 m), giving 0.33 m side clearance, above the 0.25-0.45 m reaction distances typical of the sensor
+    layout; chosen once, before the main run; not tuned to results. The lane centre moved from x = +-1.5 to +-1.65 m so that
+    the 0.8 m lane is flush with the room wall (the exit gap is also 0.8 m)."""
+    cell, n = 0.05, 120
     room = 1.75                                            # side of the two corner rooms
     free = [[False] * n for _ in range(n)]                 # free[i][j]: cell column i (x), row j (z)
 
@@ -233,10 +239,12 @@ def map_m3():
     fill(-HALF, -HALF + room, -HALF, -HALF + room)         # start room (bottom-left corner)
     fill(HALF - room, HALF, HALF - room, HALF)             # goal room (top-right corner)
     # centre line of the corridor: leaves the start room through its north side, enters the goal room through its south
-    # side; the shape is the same after a 180 degree turn (fair for the two ends). Legs: N .75, E 1.5, N 1, E 1.5, N .75.
-    way = [(-1.5, -1.25), (-1.5, -0.5), (0.0, -0.5), (0.0, 0.5), (1.5, 0.5), (1.5, 1.25)]
-    for a, b in zip(way, way[1:]):                         # 0.5 m wide lanes along the centre line
-        fill(min(a[0], b[0]) - .25, max(a[0], b[0]) + .25, min(a[1], b[1]) - .25, max(a[1], b[1]) + .25)
+    # side; the shape is the same after a 180 degree turn (fair for the two ends). (see map_m3) Legs: N .75, E 1.65, N 1, E 1.65, N .75.
+    # Legs: N .75, E 1.65, N 1, E 1.65, N .75 (5.8 m).
+    way = [(-1.65, -1.25), (-1.65, -0.5), (0.0, -0.5), (0.0, 0.5), (1.65, 0.5), (1.65, 1.25)]
+    hw = CORR_W / 2
+    for a, b in zip(way, way[1:]):                         # CORR_W wide lanes along the centre line
+        fill(min(a[0], b[0]) - hw, max(a[0], b[0]) + hw, min(a[1], b[1]) - hw, max(a[1], b[1]) + hw)
 
     def is_free(i, j):
         return 0 <= i < n and 0 <= j < n and free[i][j]
@@ -348,14 +356,14 @@ def verify_all():
     check(min(poly_dist(c, square(START, ZONE / 2 - 1e-3)) for c in cs) > 0.0 and
           min(poly_dist(c, square(GOAL, ZONE / 2 - 1e-3)) for c in cs) > 0.0,
           "no wall enters the start or goal zone (walls may touch their edges)")
-    # corridor width: along the centre line the nearest wall must be 0.25 m away (corridor 0.5 m wide), never less
+    # corridor width: along the centre line the nearest wall must be CORR_W/2 away, never less
     pts = []
     for a, b in zip(way, way[1:]):
         k = max(1, int(math.hypot(b[0] - a[0], b[1] - a[1]) / 0.05))
         pts += [(a[0] + (b[0] - a[0]) * i / k, a[1] + (b[1] - a[1]) * i / k) for i in range(k + 1)]
     clear = [min(dist_to_box(p, b) for b in m3) for p in pts]
-    check(abs(min(clear) - 0.25) < 1e-6, "corridor is 0.5 m wide (nearest wall to centre line: %.3f m, mean %.3f m)"
-          % (min(clear), sum(clear) / len(clear)))
+    check(abs(min(clear) - CORR_W / 2) < 1e-6, "corridor is %.1f m wide (nearest wall to centre line: %.3f m, mean %.3f m)"
+          % (CORR_W, min(clear), sum(clear) / len(clear)))
     check(path_exists(m3), "free path start -> goal along the corridor")
     corridor_len = sum(math.hypot(b[0] - a[0], b[1] - a[1]) for a, b in zip(way, way[1:]))
     check(5.0 <= corridor_len <= 6.0, "corridor centre line is %.1f m long (target 5-6 m), %d wall boxes" % (corridor_len, len(m3)))
