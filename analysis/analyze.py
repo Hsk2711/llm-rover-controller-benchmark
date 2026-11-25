@@ -474,7 +474,8 @@ for bot in BOTS:
     sel.append((bot + " worst", cs[-1]))
 m4 = df[(df["map"] == "M4_Trap") & (df["noise"] == 0.05) & (df["seed"] == 1)].set_index("controller")
 fig, axes = plt.subplots(2, 4, figsize=(7.16, 3.9))          # double-column width
-SHORT = {"ChatGPT": "GPT", "Gemini": "Gem", "Claude": "C"}
+SHORT = {"ChatGPT": "GPT", "Gemini": "Gem", "Claude": "Cl"}
+SHORTID = {"ChatGPT": "G", "Gemini": "Ge", "Claude": "C"}
 for ax, (title, c) in zip(axes.ravel(), sel):
     for x, z, deg, sx, sz in obst:
         ax.add_patch(Polygon(box_corners(float(x), float(z), float(deg), float(sx), float(sz)), closed=True, fc="#999999", ec="#555555", lw=0.4))
@@ -488,7 +489,7 @@ for ax, (title, c) in zip(axes.ravel(), sel):
     ax.set_xlim(-3.1, 3.1); ax.set_ylim(-3.1, 3.1); ax.set_aspect("equal"); ax.set_xticks([]); ax.set_yticks([])
     if c.startswith("LLM_"):
         _, bot_, att_, cnd_ = c.split("_")
-        title = "%s (%s%s %s)" % (title, SHORT[bot_], att_, cnd_)
+        title = "%s %s (%s%s %s)" % (SHORT[bot_], title.split()[-1], SHORTID[bot_], att_, cnd_)
     ax.set_title("%s — %s" % (title, m4.loc[c, "outcome"]), fontsize=5.6, pad=3)
 fig.subplots_adjust(hspace=0.25, wspace=0.12)
 savefig(fig, "fig4_example_paths_M4")
