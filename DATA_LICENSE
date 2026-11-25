@@ -13,5 +13,5 @@ docs/llm_transcripts/, docs/llm_task_spec.txt, docs/feedback_template.txt,
 the chatbot-generated controller files (Assets/Scripts/Controllers/LLM,
 LLM_History/, LLM_NoCompile/, LLM_History/Excluded/) and docs/figures/.
 The source code of the study is under the MIT licence (LICENSE).
-Third-party material (the NASA Perseverance model, Unity packages) is not
+Third-party material (Unity template files and packages) is not
 covered by this licence.

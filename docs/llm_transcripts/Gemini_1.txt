@@ -1,0 +1,1720 @@
+=== LLM controller study - chatbot transcript ===
+Chatbot: Gemini (free plan, Auto mode; provider selects the model)
+Attempt: 1 (valid, Temporary Chat) - plus the EXCLUDED earlier attempt 1 (normal chat), kept separately below
+Date: 20 Nov 2026
+Valid attempt outcome: one-shot 5/10 (DeterministicSensorNavigator); round 1 5/10 (AntiOscillationSensorNavigator); round 2 3/10 (SteadyProgressNavigator); round 3 9/10 (CleanWallSeekNavigator) = final FB
+Transcript status: PARTIAL - the user's notes file contains the task text, the EXCLUDED attempt's code, and the valid attempt's
+  feedback messages and code for rounds 1-3. The valid attempt's one-shot reply (DeterministicSensorNavigator) and Gemini's
+  explanatory text around the code are not included. All code versions are also kept in the project's LLM_History folder.
+Note: the user's notes contain the line 'Test report: 10/10 ...' next to the round 1 report; this is the excluded attempt's
+  score recorded in the notes, to be confirmed as not sent to the valid chat.
+
+##################################################################
+### PART A - Task description (identical for every attempt)
+##################################################################
+You are writing a navigation controller for a small simulated ground rover in Unity (C#).
+
+TASK: Drive the rover from its start position to a goal area without hitting any obstacle
+or wall. The environment is a 6 m x 6 m arena with unknown box-shaped obstacles, which
+may include narrow corridors and U-shaped dead ends. You have 60 seconds.
+Any contact with an obstacle or wall ends the run as a failure.
+
+SENSORS (all you get, updated 20 times per second):
+- Five ultrasonic distance sensors, readings in metres:
+  front (0 deg), left (+45 deg), right (-45 deg), leftSide (+90 deg), rightSide (-90 deg),
+  angles measured from the rover's heading, positive = to the left.
+  The three forward sensors sit on the front face; the two side sensors sit at the middle
+  of each side. Each has a cone of about +-15 deg and reports the nearest object in it.
+  Range 0.02 to 4.0 m; 4.0 means nothing detected. Readings are NOISY (Gaussian noise
+  proportional to distance, up to 10%) and occasionally a reading falsely returns 4.0.
+- goalDistance: straight-line distance to the goal centre in metres.
+- goalAngleDeg: signed angle from the rover's heading to the goal, -180..180
+  (positive = goal is to the left).
+There is no map, no position, no camera and no lidar.
+
+ACTUATION: return (speed01, turn) every 0.05 s.
+- speed01: 0..1, fraction of max forward speed 0.3 m/s (no reversing).
+- turn: -1..1, fraction of max turn rate 90 deg/s (positive = turn left).
+Rover size: 0.20 m long x 0.15 m wide.
+
+WRITE exactly one C# class, named LLM_Controller, that implements the interface below.
+These types ALREADY EXIST in the project (global namespace) - do NOT declare them again.
+Observation has these public float fields for you to use (it may contain other fields;
+ignore them): front, left, right, leftSide, rightSide, goalDistance, goalAngleDeg.
+
+public interface IRoverController {
+    string Name { get; }
+    void ResetController();   // called at the start of every run
+    (float speed01, float turn) Decide(Observation obs);   // called every 0.05 s
+}
+
+RULES: Plain C# only (System and UnityEngine.Mathf allowed). Do not use
+UnityEngine.Random, Physics, GameObject, Transform, Time or any Unity scene API.
+Keep any memory you need in private fields and clear it in ResetController().
+The controller must be deterministic. Output the complete code in one block.
+
+##################################################################
+### PART B - EXCLUDED earlier attempt 1 (normal chat, not temporary): one-shot code, Name 'LLM_Controller', scored 10/10
+##################################################################
+using System;
+using UnityEngine;
+
+public class LLM_Controller : IRoverController
+{
+    private const int HistorySize = 5;
+    private const float SensorMaxRange = 4.0f;
+    private const float Dt = 0.05f;
+    private const float MaxSpeed = 0.30f;
+    private const float MaxTurnRateDeg = 90.0f;
+
+    private enum NavMode
+    {
+        GoalSeek,
+        WallFollow
+    }
+
+    // Sliding sensor history to mitigate Gaussian noise and occasional false 4.0 readings
+    private float[] _frontHist;
+    private float[] _leftHist;
+    private float[] _rightHist;
+    private float[] _leftSideHist;
+    private float[] _rightSideHist;
+    private int _histCount;
+    private int _histIndex;
+
+    // Navigation & escape state
+    private NavMode _mode;
+    private int _wallSide; // +1 = follow wall on left (keep obstacle on left), -1 = follow wall on right
+    private int _modeTicks;
+    private int _totalTicks;
+    private float _prevTurn;
+    private int _oscillationTicks;
+
+    // Progress tracking to escape U-shaped dead ends and local minima
+    private float _bestGoalDist;
+    private float _goalDistAtModeStart;
+    private int _ticksWithoutProgress;
+    private float _accumTurnDeg;
+
+    public string Name => "LLM_Controller";
+
+    public void ResetController()
+    {
+        _frontHist = new float[HistorySize];
+        _leftHist = new float[HistorySize];
+        _rightHist = new float[HistorySize];
+        _leftSideHist = new float[HistorySize];
+        _rightSideHist = new float[HistorySize];
+        _histCount = 0;
+        _histIndex = 0;
+
+        _mode = NavMode.GoalSeek;
+        _wallSide = 1;
+        _modeTicks = 0;
+        _totalTicks = 0;
+        _prevTurn = 0f;
+        _oscillationTicks = 0;
+
+        _bestGoalDist = float.MaxValue;
+        _goalDistAtModeStart = float.MaxValue;
+        _ticksWithoutProgress = 0;
+        _accumTurnDeg = 0f;
+    }
+
+    public (float speed01, float turn) Decide(Observation obs)
+    {
+        if (_frontHist == null)
+        {
+            ResetController();
+        }
+
+        _totalTicks++;
+        _modeTicks++;
+
+        RecordReading(_frontHist, SanitizeSensor(obs.front));
+        RecordReading(_leftHist, SanitizeSensor(obs.left));
+        RecordReading(_rightHist, SanitizeSensor(obs.right));
+        RecordReading(_leftSideHist, SanitizeSensor(obs.leftSide));
+        RecordReading(_rightSideHist, SanitizeSensor(obs.rightSide));
+
+        _histIndex = (_histIndex + 1) % HistorySize;
+        if (_histCount < HistorySize)
+        {
+            _histCount++;
+        }
+
+        // Filtered distances (median resists occasional false 4.0 spikes and single-tick noise)
+        float f = MedianFiltered(_frontHist, _histCount);
+        float l = MedianFiltered(_leftHist, _histCount);
+        float r = MedianFiltered(_rightHist, _histCount);
+        float ls = MedianFiltered(_leftSideHist, _histCount);
+        float rs = MedianFiltered(_rightSideHist, _histCount);
+
+        // Also guard against sudden false 4.0 when recent minimum was close
+        f = GuardFalseClearance(f, _frontHist, _histCount);
+        l = GuardFalseClearance(l, _leftHist, _histCount);
+        r = GuardFalseClearance(r, _rightHist, _histCount);
+        ls = GuardFalseClearance(ls, _leftSideHist, _histCount);
+        rs = GuardFalseClearance(rs, _rightSideHist, _histCount);
+
+        float goalDist = Mathf.Max(0f, obs.goalDistance);
+        float goalAngle = Mathf.Clamp(obs.goalAngleDeg, -180f, 180f);
+
+        if (goalDist < _bestGoalDist - 0.04f)
+        {
+            _bestGoalDist = goalDist;
+            _ticksWithoutProgress = 0;
+        }
+        else
+        {
+            _ticksWithoutProgress++;
+        }
+
+        // Detect left/right oscillation
+        if ((_prevTurn > 0.25f && obs.goalAngleDeg < -15f) || (_prevTurn < -0.25f && obs.goalAngleDeg > 15f))
+        {
+            _oscillationTicks++;
+        }
+        else if (_oscillationTicks > 0)
+        {
+            _oscillationTicks--;
+        }
+
+        // Forward and angular clearances
+        float minFrontCone = Mathf.Min(f, Mathf.Min(l, r));
+        bool frontBlocked = f < 0.34f || minFrontCone < 0.25f;
+        bool pathTowardGoalClear = IsGoalDirectionClear(goalAngle, f, l, r, ls, rs);
+
+        // If stuck without progress for ~7 seconds (140 ticks), flip wall-follow side to try the other way around a dead end
+        if (_ticksWithoutProgress >= 140)
+        {
+            _wallSide = -_wallSide;
+            _ticksWithoutProgress = 0;
+            _bestGoalDist = goalDist;
+            _mode = NavMode.WallFollow;
+            _modeTicks = 0;
+            _accumTurnDeg = 0f;
+            _goalDistAtModeStart = goalDist;
+        }
+
+        if (_mode == NavMode.GoalSeek)
+        {
+            if (frontBlocked || !pathTowardGoalClear || _oscillationTicks >= 16)
+            {
+                _mode = NavMode.WallFollow;
+                _modeTicks = 0;
+                _accumTurnDeg = 0f;
+                _oscillationTicks = 0;
+                _goalDistAtModeStart = goalDist;
+                _wallSide = ChooseInitialWallSide(goalAngle, l, r, ls, rs);
+            }
+        }
+        else // NavMode.WallFollow
+        {
+            // Exit wall-following back to GoalSeek once we have cleared the obstacle, made meaningful progress or turned out of a pocket,
+            // and the direct path toward the goal is open.
+            bool clearedPocket = (_accumTurnDeg >= 135f) || (goalDist < _goalDistAtModeStart - 0.18f && _modeTicks >= 16);
+            if (_modeTicks >= 12 && !frontBlocked && pathTowardGoalClear && (clearedPocket || _modeTicks >= 55))
+            {
+                _mode = NavMode.GoalSeek;
+                _modeTicks = 0;
+                _accumTurnDeg = 0f;
+            }
+        }
+
+        float speed01;
+        float turn;
+
+        if (_mode == NavMode.GoalSeek)
+        {
+            ComputeGoalSeek(goalDist, goalAngle, f, l, r, ls, rs, out speed01, out turn);
+        }
+        else
+        {
+            ComputeWallFollow(goalAngle, f, l, r, ls, rs, out speed01, out turn);
+        }
+
+        // Emergency close-range reflex to avoid clipping walls/obstacles due to noise or turn lag
+        ApplyCloseProximityReflex(f, l, r, ls, rs, ref speed01, ref turn);
+
+        speed01 = Mathf.Clamp01(speed01);
+        turn = Mathf.Clamp(turn, -1f, 1f);
+
+        _accumTurnDeg += Mathf.Abs(turn) * MaxTurnRateDeg * Dt;
+        _prevTurn = turn;
+
+        // Ensure we don't stall completely if time is running out and space is open
+        if (_totalTicks > 1050 && speed01 < 0.25f && f > 0.28f)
+        {
+            speed01 = 0.35f;
+        }
+
+        return (speed01, turn);
+    }
+
+    private void ComputeGoalSeek(
+        float goalDist,
+        float goalAngle,
+        float f,
+        float l,
+        float r,
+        float ls,
+        float rs,
+        out float speed01,
+        out float turn)
+    {
+        float desiredTurn = Mathf.Clamp(goalAngle / 32f, -1f, 1f);
+
+        // Gentle repulsion from angled/side obstacles when passing near them
+        float leftThreat = Mathf.Max(0f, 0.36f - l) / 0.36f + 0.5f * Mathf.Max(0f, 0.24f - ls) / 0.24f;
+        float rightThreat = Mathf.Max(0f, 0.36f - r) / 0.36f + 0.5f * Mathf.Max(0f, 0.24f - rs) / 0.24f;
+        float avoidanceBias = Mathf.Clamp((rightThreat - leftThreat) * 0.65f, -0.75f, 0.75f);
+
+        // Centering in narrow corridors when both sides are relatively close
+        float corridorDiff = 0f;
+        if (ls < 0.55f && rs < 0.55f)
+        {
+            corridorDiff = Mathf.Clamp((ls - rs) * 0.9f, -0.45f, 0.45f);
+        }
+
+        turn = Mathf.Clamp(desiredTurn * 0.85f + avoidanceBias + corridorDiff, -1f, 1f);
+
+        // If goal angle is sharp, slow down so turning radius stays tight
+        float absAngle = Mathf.Abs(goalAngle);
+        float angleFactor = 1.0f - Mathf.Clamp01(absAngle / 110f) * 0.65f;
+        float clearanceFactor = Mathf.Clamp01((f - 0.18f) / 0.75f);
+
+        if (goalDist < 0.22f)
+        {
+            speed01 = Mathf.Clamp(goalDist * 2.2f, 0.15f, 0.55f);
+        }
+        else
+        {
+            speed01 = Mathf.Lerp(0.22f, 1.0f, clearanceFactor * angleFactor);
+        }
+    }
+
+    private void ComputeWallFollow(
+        float goalAngle,
+        float f,
+        float l,
+        float r,
+        float ls,
+        float rs,
+        out float speed01,
+        out float turn)
+    {
+        // _wallSide == +1: keep obstacle on the LEFT, turn RIGHT (+turn is left, -turn is right)
+        // _wallSide == -1: keep obstacle on the RIGHT, turn LEFT (+turn is left, -turn is right)
+        float targetWallDist = 0.25f;
+
+        if (_wallSide > 0)
+        {
+            float sideDist = Mathf.Min(ls, l + 0.05f);
+            if (f < 0.30f || l < 0.24f)
+            {
+                // Obstacle ahead or forward-left: turn right (-turn)
+                float urgency = Mathf.Clamp01((0.36f - Mathf.Min(f, l + 0.05f)) / 0.26f);
+                turn = -Mathf.Lerp(0.35f, 1.0f, urgency);
+                speed01 = Mathf.Lerp(0.45f, 0.20f, urgency);
+            }
+            else if (sideDist > 0.48f && f > 0.55f)
+            {
+                // Lost contact with left wall; steer gently back toward left (+turn) while advancing
+                turn = 0.28f;
+                speed01 = 0.48f;
+            }
+            else
+            {
+                // Maintain steady offset from left wall
+                float err = sideDist - targetWallDist;
+                turn = Mathf.Clamp(err * 1.6f, -0.55f, 0.55f);
+                speed01 = Mathf.Lerp(0.25f, 0.65f, Mathf.Clamp01((f - 0.25f) / 0.60f));
+            }
+        }
+        else
+        {
+            float sideDist = Mathf.Min(rs, r + 0.05f);
+            if (f < 0.30f || r < 0.24f)
+            {
+                // Obstacle ahead or forward-right: turn left (+turn)
+                float urgency = Mathf.Clamp01((0.36f - Mathf.Min(f, r + 0.05f)) / 0.26f);
+                turn = Mathf.Lerp(0.35f, 1.0f, urgency);
+                speed01 = Mathf.Lerp(0.45f, 0.20f, urgency);
+            }
+            else if (sideDist > 0.48f && f > 0.55f)
+            {
+                // Lost contact with right wall; steer gently back toward right (-turn) while advancing
+                turn = -0.28f;
+                speed01 = 0.48f;
+            }
+            else
+            {
+                // Maintain steady offset from right wall
+                float err = targetWallDist - sideDist;
+                turn = Mathf.Clamp(err * 1.6f, -0.55f, 0.55f);
+                speed01 = Mathf.Lerp(0.25f, 0.65f, Mathf.Clamp01((f - 0.25f) / 0.60f));
+            }
+        }
+
+        // If heading toward goal is now right in front and clear, nudge slightly toward goalAngle
+        if (Mathf.Abs(goalAngle) < 25f && f > 0.60f && l > 0.40f && r > 0.40f)
+        {
+            turn = Mathf.Lerp(turn, Mathf.Clamp(goalAngle / 40f, -0.6f, 0.6f), 0.35f);
+        }
+    }
+
+    private void ApplyCloseProximityReflex(
+        float f,
+        float l,
+        float r,
+        float ls,
+        float rs,
+        ref float speed01,
+        ref float turn)
+    {
+        float minAny = Mathf.Min(f, Mathf.Min(l, Mathf.Min(r, Mathf.Min(ls, rs))));
+        if (minAny < 0.16f)
+        {
+            speed01 = Mathf.Min(speed01, 0.14f);
+        }
+        else if (f < 0.24f)
+        {
+            speed01 = Mathf.Min(speed01, 0.22f);
+        }
+
+        // Prevent turning directly into a very close obstacle on that side
+        if (turn > 0f && (l < 0.16f || ls < 0.13f))
+        {
+            turn = Mathf.Min(turn, 0f);
+            if (r > 0.22f || rs > 0.18f)
+            {
+                turn = -0.55f;
+            }
+        }
+        else if (turn < 0f && (r < 0.16f || rs < 0.13f))
+        {
+            turn = Mathf.Max(turn, 0f);
+            if (l > 0.22f || ls > 0.18f)
+            {
+                turn = 0.55f;
+            }
+        }
+    }
+
+    private static int ChooseInitialWallSide(float goalAngle, float l, float r, float ls, float rs)
+    {
+        float leftOpenness = l + 0.7f * ls;
+        float rightOpenness = r + 0.7f * rs;
+
+        // If one side has much more room, follow the side with the obstacle closer so we don't cross open space
+        if (Mathf.Abs(leftOpenness - rightOpenness) > 0.25f)
+        {
+            return leftOpenness < rightOpenness ? 1 : -1;
+        }
+
+        // Otherwise turn away from the goal direction to hug the obstacle on the goal side
+        return goalAngle >= 0f ? -1 : 1;
+    }
+
+    private static bool IsGoalDirectionClear(float goalAngle, float f, float l, float r, float ls, float rs)
+    {
+        if (goalAngle > 65f)
+        {
+            return l > 0.38f && ls > 0.32f;
+        }
+        if (goalAngle > 20f)
+        {
+            return l > 0.36f && f > 0.34f;
+        }
+        if (goalAngle < -65f)
+        {
+            return r > 0.38f && rs > 0.32f;
+        }
+        if (goalAngle < -20f)
+        {
+            return r > 0.36f && f > 0.34f;
+        }
+        return f > 0.36f && l > 0.26f && r > 0.26f;
+    }
+
+    private static float SanitizeSensor(float val)
+    {
+        if (float.IsNaN(val) || float.IsInfinity(val))
+        {
+            return SensorMaxRange;
+        }
+        return Mathf.Clamp(val, 0.02f, SensorMaxRange);
+    }
+
+    private void RecordReading(float[] buffer, float value)
+    {
+        buffer[_histIndex] = value;
+    }
+
+    private static float MedianFiltered(float[] buffer, int count)
+    {
+        if (count <= 0)
+        {
+            return SensorMaxRange;
+        }
+
+        float[] temp = new float[count];
+        for (int i = 0; i < count; i++)
+        {
+            temp[i] = buffer[i];
+        }
+        Array.Sort(temp);
+        return temp[count / 2];
+    }
+
+    private static float GuardFalseClearance(float medianVal, float[] buffer, int count)
+    {
+        if (medianVal < SensorMaxRange - 0.01f || count < 2)
+        {
+            return medianVal;
+        }
+
+        // Check if recent readings were close; if so, a 4.0 reading is likely a false dropout
+        float minRecent = SensorMaxRange;
+        int nonMaxCount = 0;
+        for (int i = 0; i < count; i++)
+        {
+            if (buffer[i] < SensorMaxRange - 0.01f)
+            {
+                nonMaxCount++;
+                if (buffer[i] < minRecent)
+                {
+                    minRecent = buffer[i];
+                }
+            }
+        }
+
+        if (nonMaxCount >= 2 && minRecent < 0.75f)
+        {
+            return minRecent;
+        }
+
+        return medianVal;
+    }
+}
+
+##################################################################
+### PART C - VALID attempt 1 (Temporary Chat)
+### One-shot reply (DeterministicSensorNavigator, 5/10): NOT SAVED in this file
+##################################################################
+
+##################################################################
+### PART D - Valid attempt, rounds 1-3 (as in the user's notes)
+##################################################################
+ Test report: 10/10 reached the goal, 0 collisions, 0 timeouts (got stuck), 0 runtime errors. Most common failure: none. Test report: 5/10 reached the goal, 0 collisions, 5 timeouts (got stuck), 0 runtime errors. Most common failure: gets stuck oscillating.
+Please improve the controller and send the complete code again.using System;
+using UnityEngine;
+
+public class LLM_Controller : IRoverController
+{
+    private enum Mode
+    {
+        SeekGoal,
+        AvoidTurn,
+        WallFollow
+    }
+
+    private const float Dt = 0.05f;
+    private const float MaxSpeedMps = 0.30f;
+    private const float NoDetectValue = 4.0f;
+
+    // Rover dimensions: 0.20 m long x 0.15 m wide
+    private const float FrontStopDist = 0.30f;
+    private const float FrontSlowDist = 0.70f;
+    private const float SideDangerDist = 0.21f;
+    private const float SideComfortDist = 0.35f;
+
+    private Mode _mode;
+
+    // Filtered sensor estimates (in metres)
+    private float _fFront;
+    private float _fLeft;
+    private float _fRight;
+    private float _fLeftSide;
+    private float _fRightSide;
+
+    // Consecutive "no-detection" (4.0) counters
+    private int _noDetFront;
+    private int _noDetLeft;
+    private int _noDetRight;
+    private int _noDetLeftSide;
+    private int _noDetRightSide;
+
+    // Committed escape / wall-follow state
+    private float _escapeDir;         // +1.0 = left, -1.0 = right
+    private float _avoidDir;          // hysteresis-locked avoidance direction in SeekGoal
+    private float _modeTimer;         // time in current mode
+    private float _seekLockTimer;     // minimum time to stay in SeekGoal after exiting obstacle mode
+    private float _prevTurn;          // smoothed turn output to prevent chatter
+    private float _prevTurnSign;      // sign of previous turn to detect sign oscillation
+    private float _oscillationTimer;  // accumulates when turn direction flips rapidly
+
+    // Progress / stall detection
+    private float _bestGoalDist;
+    private float _sinceProgressTimer;
+    private float _goalDistAtModeStart;
+
+    public string Name => "AntiOscillationSensorNavigator";
+
+    public void ResetController()
+    {
+        _mode = Mode.SeekGoal;
+
+        _fFront = NoDetectValue;
+        _fLeft = NoDetectValue;
+        _fRight = NoDetectValue;
+        _fLeftSide = NoDetectValue;
+        _fRightSide = NoDetectValue;
+
+        _noDetFront = 0;
+        _noDetLeft = 0;
+        _noDetRight = 0;
+        _noDetLeftSide = 0;
+        _noDetRightSide = 0;
+
+        _escapeDir = 1.0f;
+        _avoidDir = 1.0f;
+        _modeTimer = 0.0f;
+        _seekLockTimer = 0.0f;
+        _prevTurn = 0.0f;
+        _prevTurnSign = 0.0f;
+        _oscillationTimer = 0.0f;
+
+        _bestGoalDist = float.MaxValue;
+        _sinceProgressTimer = 0.0f;
+        _goalDistAtModeStart = float.MaxValue;
+    }
+
+    public (float speed01, float turn) Decide(Observation obs)
+    {
+        _modeTimer += Dt;
+        if (_seekLockTimer > 0.0f)
+        {
+            _seekLockTimer = Mathf.Max(0.0f, _seekLockTimer - Dt);
+        }
+
+        UpdateFilteredSensors(obs);
+
+        float goalAngle = Mathf.Clamp(obs.goalAngleDeg, -180.0f, 180.0f);
+        float goalDist = Mathf.Max(0.0f, obs.goalDistance);
+
+        // Track meaningful progress toward goal over time
+        if (goalDist < _bestGoalDist - 0.05f)
+        {
+            _bestGoalDist = goalDist;
+            _sinceProgressTimer = 0.0f;
+        }
+        else
+        {
+            _sinceProgressTimer += Dt;
+        }
+
+        float leftClear = Mathf.Min(_fLeft, _fLeftSide * 1.05f);
+        float rightClear = Mathf.Min(_fRight, _fRightSide * 1.05f);
+
+        bool blockedAhead = _fFront < FrontStopDist ||
+                            (_fLeft < 0.24f && Mathf.Abs(goalAngle) < 60.0f) ||
+                            (_fRight < 0.24f && Mathf.Abs(goalAngle) < 60.0f);
+
+        bool tightCorridor = (_fLeftSide < SideDangerDist && _fRightSide < SideDangerDist) ||
+                             (_fFront < 0.45f && leftClear < SideComfortDist && rightClear < SideComfortDist);
+
+        bool stalledOrOscillating = _sinceProgressTimer > 4.5f || _oscillationTimer > 1.2f;
+
+        // State transitions with strong anti-oscillation hysteresis
+        if (_mode == Mode.SeekGoal)
+        {
+            if (blockedAhead || stalledOrOscillating)
+            {
+                _escapeDir = ChooseEscapeDirection(goalAngle, leftClear, rightClear, stalledOrOscillating);
+                _mode = (tightCorridor || stalledOrOscillating) ? Mode.WallFollow : Mode.AvoidTurn;
+                _modeTimer = 0.0f;
+                _goalDistAtModeStart = goalDist;
+                _oscillationTimer = 0.0f;
+                if (stalledOrOscillating)
+                {
+                    _sinceProgressTimer = 0.0f;
+                }
+            }
+        }
+        else if (_mode == Mode.AvoidTurn)
+        {
+            bool hasMadeGoalProgress = goalDist < _goalDistAtModeStart - 0.12f;
+            bool frontClearEnough = _fFront > FrontSlowDist && _fLeft > 0.36f && _fRight > 0.36f;
+            bool goalFacingClear = IsDirectionClear(goalAngle) && Mathf.Abs(goalAngle) < 55.0f;
+
+            // Require at least 0.65 s of committed turn before re-entering SeekGoal
+            if (_modeTimer >= 0.65f && frontClearEnough && (goalFacingClear || (hasMadeGoalProgress && _modeTimer >= 1.1f)))
+            {
+                EnterSeekGoal();
+            }
+            else if (_modeTimer >= 2.6f)
+            {
+                // Escalate to sustained wall-following to clear corners/U-shapes cleanly
+                _mode = Mode.WallFollow;
+                _modeTimer = 0.0f;
+                _goalDistAtModeStart = goalDist;
+            }
+        }
+        else if (_mode == Mode.WallFollow)
+        {
+            bool goalDirectionClear = IsDirectionClear(goalAngle) && Mathf.Abs(goalAngle) < 70.0f;
+            bool improvedGoal = goalDist < _goalDistAtModeStart - 0.15f;
+
+            // Commit to wall-following for at least 1.5 s so we don't flip back at the mouth of a pocket
+            if (_modeTimer >= 1.5f && _fFront > FrontSlowDist && goalDirectionClear && (improvedGoal || _modeTimer >= 2.8f))
+            {
+                EnterSeekGoal();
+            }
+            else if (_modeTimer >= 8.5f)
+            {
+                // Flip wall side once if a long follow hasn't broken out, then keep trying
+                _escapeDir = -_escapeDir;
+                _modeTimer = 0.0f;
+                _goalDistAtModeStart = goalDist;
+            }
+        }
+
+        float rawSpeed01;
+        float rawTurn;
+
+        if (_mode == Mode.SeekGoal)
+        {
+            (rawSpeed01, rawTurn) = ComputeSeekCommand(goalAngle, goalDist, leftClear, rightClear);
+        }
+        else if (_mode == Mode.AvoidTurn)
+        {
+            (rawSpeed01, rawTurn) = ComputeAvoidTurnCommand(goalAngle, leftClear, rightClear);
+        }
+        else
+        {
+            (rawSpeed01, rawTurn) = ComputeWallFollowCommand(leftClear, rightClear);
+        }
+
+        // Apply turn damping to prevent rapid sign/magnitude chatter from sensor noise
+        float blend = _mode == Mode.SeekGoal ? 0.55f : 0.70f;
+        float turnCmd = Mathf.Lerp(_prevTurn, rawTurn, blend);
+        float speed01 = rawSpeed01;
+
+        // Track sign flips to detect oscillation early
+        float turnSign = Mathf.Abs(turnCmd) > 0.15f ? Mathf.Sign(turnCmd) : 0.0f;
+        if (turnSign != 0.0f && _prevTurnSign != 0.0f && turnSign != _prevTurnSign && _mode == Mode.SeekGoal)
+        {
+            _oscillationTimer += Dt * 2.5f;
+        }
+        else
+        {
+            _oscillationTimer = Mathf.Max(0.0f, _oscillationTimer - Dt * 0.4f);
+        }
+        if (turnSign != 0.0f)
+        {
+            _prevTurnSign = turnSign;
+        }
+
+        // Hard emergency safety overrides
+        if (_fFront < 0.17f)
+        {
+            speed01 = Mathf.Min(speed01, 0.10f);
+            turnCmd = _escapeDir;
+        }
+        if (_fLeft < 0.14f && turnCmd > 0.0f)
+        {
+            turnCmd = -0.55f;
+            speed01 = Mathf.Min(speed01, 0.25f);
+        }
+        if (_fRight < 0.14f && turnCmd < 0.0f)
+        {
+            turnCmd = 0.55f;
+            speed01 = Mathf.Min(speed01, 0.25f);
+        }
+        if (_fLeftSide < 0.11f && turnCmd > 0.0f)
+        {
+            turnCmd = Mathf.Min(turnCmd, -0.35f);
+            speed01 = Mathf.Min(speed01, 0.30f);
+        }
+        if (_fRightSide < 0.11f && turnCmd < 0.0f)
+        {
+            turnCmd = Mathf.Max(turnCmd, 0.35f);
+            speed01 = Mathf.Min(speed01, 0.30f);
+        }
+
+        speed01 = Mathf.Clamp01(speed01);
+        turnCmd = Mathf.Clamp(turnCmd, -1.0f, 1.0f);
+        _prevTurn = turnCmd;
+
+        return (speed01, turnCmd);
+    }
+
+    private void EnterSeekGoal()
+    {
+        _mode = Mode.SeekGoal;
+        _modeTimer = 0.0f;
+        _seekLockTimer = 0.75f;
+        _oscillationTimer = 0.0f;
+        _sinceProgressTimer = 0.0f;
+    }
+
+    private void UpdateFilteredSensors(Observation obs)
+    {
+        _fFront = FilterSensor(obs.front, _fFront, ref _noDetFront);
+        _fLeft = FilterSensor(obs.left, _fLeft, ref _noDetLeft);
+        _fRight = FilterSensor(obs.right, _fRight, ref _noDetRight);
+        _fLeftSide = FilterSensor(obs.leftSide, _fLeftSide, ref _noDetLeftSide);
+        _fRightSide = FilterSensor(obs.rightSide, _fRightSide, ref _noDetRightSide);
+    }
+
+    private static float FilterSensor(float raw, float prevFiltered, ref int noDetCount)
+    {
+        float clamped = Mathf.Clamp(raw, 0.02f, NoDetectValue);
+        bool isNoDetect = clamped >= NoDetectValue - 0.001f;
+
+        if (isNoDetect)
+        {
+            noDetCount++;
+            if (prevFiltered < 1.2f && noDetCount < 3)
+            {
+                return Mathf.Max(0.02f, prevFiltered + 0.04f);
+            }
+            if (prevFiltered < 2.5f && noDetCount < 2)
+            {
+                return Mathf.Max(0.02f, prevFiltered + 0.12f);
+            }
+            return NoDetectValue;
+        }
+
+        noDetCount = 0;
+
+        if (clamped < prevFiltered)
+        {
+            float alpha = clamped < 0.45f ? 0.75f : 0.55f;
+            return Mathf.Lerp(prevFiltered, clamped, alpha);
+        }
+
+        return Mathf.Lerp(prevFiltered, clamped, 0.32f);
+    }
+
+    private float ChooseEscapeDirection(float goalAngleDeg, float leftClear, float rightClear, bool forceSwitchOnStall)
+    {
+        if (forceSwitchOnStall && _modeTimer > 1.5f)
+        {
+            return -_escapeDir;
+        }
+
+        float diff = leftClear - rightClear;
+        if (Mathf.Abs(diff) > 0.14f)
+        {
+            return diff > 0.0f ? 1.0f : -1.0f;
+        }
+        if (Mathf.Abs(goalAngleDeg) > 15.0f)
+        {
+            return goalAngleDeg > 0.0f ? 1.0f : -1.0f;
+        }
+        return _escapeDir;
+    }
+
+    private bool IsDirectionClear(float angleDeg)
+    {
+        if (angleDeg > 20.0f)
+        {
+            return _fLeft > 0.58f && _fLeftSide > 0.25f;
+        }
+        if (angleDeg < -20.0f)
+        {
+            return _fRight > 0.58f && _fRightSide > 0.25f;
+        }
+        return _fFront > FrontSlowDist && _fLeft > 0.42f && _fRight > 0.42f;
+    }
+
+    private (float speed01, float turn) ComputeSeekCommand(
+        float goalAngleDeg,
+        float goalDist,
+        float leftClear,
+        float rightClear)
+    {
+        float goalTurn = Mathf.Clamp(goalAngleDeg / 35.0f, -1.0f, 1.0f);
+
+        // Smooth obstacle repulsion without sharp step discontinuities
+        float leftRepulsion = 0.0f;
+        if (_fLeft < 0.55f)
+        {
+            leftRepulsion += (0.55f - _fLeft) / 0.55f;
+        }
+        if (_fLeftSide < SideComfortDist)
+        {
+            leftRepulsion += 0.75f * ((SideComfortDist - _fLeftSide) / SideComfortDist);
+        }
+
+        float rightRepulsion = 0.0f;
+        if (_fRight < 0.55f)
+        {
+            rightRepulsion += (0.55f - _fRight) / 0.55f;
+        }
+        if (_fRightSide < SideComfortDist)
+        {
+            rightRepulsion += 0.75f * ((SideComfortDist - _fRightSide) / SideComfortDist);
+        }
+
+        float obstacleBias = (rightRepulsion - leftRepulsion) * 0.75f;
+
+        // Hysteresis on _avoidDir so noisy readings don't flip avoidance side back and forth
+        if (leftClear - rightClear > 0.14f)
+        {
+            _avoidDir = 1.0f;
+        }
+        else if (rightClear - leftClear > 0.14f)
+        {
+            _avoidDir = -1.0f;
+        }
+
+        float frontUrgency = _fFront < FrontSlowDist
+            ? Mathf.Clamp01((FrontSlowDist - _fFront) / (FrontSlowDist - FrontStopDist))
+            : 0.0f;
+
+        // Immediately after exiting obstacle avoidance, damp goal pull slightly if nearly opposite to escapeDir
+        float postExitScale = (_seekLockTimer > 0.0f && Mathf.Sign(goalAngleDeg) != _escapeDir && Mathf.Abs(goalAngleDeg) > 45.0f)
+            ? 0.45f
+            : 1.0f;
+
+        float turn = Mathf.Lerp(goalTurn * postExitScale + obstacleBias, _avoidDir, frontUrgency * 0.70f);
+
+        float minSide = Mathf.Min(_fLeft, Mathf.Min(_fRight, Mathf.Min(_fLeftSide, _fRightSide)));
+        float clearanceFactor = Mathf.Clamp01((Mathf.Min(_fFront, minSide * 1.5f) - 0.15f) / 0.55f);
+        float turnFactor = Mathf.Clamp01(1.0f - 0.50f * Mathf.Abs(turn));
+        float goalFactor = goalDist < 0.30f ? Mathf.Clamp(goalDist / 0.30f, 0.25f, 1.0f) : 1.0f;
+
+        float speed01 = Mathf.Lerp(0.16f, 1.0f, clearanceFactor) * turnFactor * goalFactor;
+        if (Mathf.Abs(goalAngleDeg) > 110.0f && _fFront > 0.6f)
+        {
+            speed01 = Mathf.Min(speed01, 0.35f);
+        }
+
+        return (speed01, turn);
+    }
+
+    private (float speed01, float turn) ComputeAvoidTurnCommand(
+        float goalAngleDeg,
+        float leftClear,
+        float rightClear)
+    {
+        float turn = _escapeDir * 0.90f;
+
+        if (_fFront > FrontStopDist * 1.35f && Mathf.Sign(goalAngleDeg) == _escapeDir && Mathf.Abs(goalAngleDeg) < 65.0f)
+        {
+            turn = Mathf.Lerp(_escapeDir * 0.90f, Mathf.Clamp(goalAngleDeg / 35.0f, -1.0f, 1.0f), 0.30f);
+        }
+
+        float minClear = Mathf.Min(_fFront, Mathf.Min(leftClear, rightClear));
+        float speed01 = minClear < 0.24f ? 0.18f : 0.42f;
+        return (speed01, turn);
+    }
+
+    private (float speed01, float turn) ComputeWallFollowCommand(
+        float leftClear,
+        float rightClear)
+    {
+        float sideDist = _escapeDir > 0.0f
+            ? Mathf.Min(_fRightSide, _fRight * 0.9f)
+            : Mathf.Min(_fLeftSide, _fLeft * 0.9f);
+
+        float diagDist = _escapeDir > 0.0f ? _fRight : _fLeft;
+
+        if (_fFront < FrontStopDist * 1.2f)
+        {
+            float tightFactor = Mathf.Clamp01((FrontStopDist * 1.2f - _fFront) / 0.20f);
+            float speed = Mathf.Lerp(0.38f, 0.16f, tightFactor);
+            return (speed, _escapeDir);
+        }
+
+        float error = SideComfortDist - sideDist;
+        float wallSteer = Mathf.Clamp(error * 2.8f, -0.70f, 0.80f) * _escapeDir;
+
+        if (diagDist < 0.30f)
+        {
+            wallSteer = _escapeDir * 0.85f;
+        }
+        else if (sideDist > SideComfortDist + 0.24f && _fFront > 0.55f)
+        {
+            wallSteer = -_escapeDir * 0.40f;
+        }
+
+        float minClear = Mathf.Min(_fFront, Mathf.Min(leftClear, rightClear));
+        float speed01 = minClear < 0.24f ? 0.22f : Mathf.Clamp(_fFront * 0.85f, 0.25f, 0.62f);
+        return (speed01, wallSteer);
+    }
+}Test report: 5/10 reached the goal, 0 collisions, 5 timeouts (got stuck), 0 runtime errors. Most common failure: gets stuck oscillating.
+Please improve the controller and send the complete code again. using System;
+using UnityEngine;
+
+public class LLM_Controller : IRoverController
+{
+    private enum Mode
+    {
+        SeekGoal,
+        AvoidTurn,
+        WallFollow,
+        DeadEndTurn
+    }
+
+    private const float Dt = 0.05f;
+    private const float NoDetectValue = 4.0f;
+
+    // Rover size: 0.20 m long x 0.15 m wide
+    private const float FrontStopDist = 0.31f;
+    private const float FrontSlowDist = 0.72f;
+    private const float SideDangerDist = 0.21f;
+    private const float SideComfortDist = 0.36f;
+
+    private Mode _mode;
+
+    // Filtered ultrasonic distances (m)
+    private float _fFront;
+    private float _fLeft;
+    private float _fRight;
+    private float _fLeftSide;
+    private float _fRightSide;
+
+    // Consecutive 4.0 (no-detection) counters
+    private int _noDetFront;
+    private int _noDetLeft;
+    private int _noDetRight;
+    private int _noDetLeftSide;
+    private int _noDetRightSide;
+
+    // Navigation & anti-oscillation state
+    private float _escapeDir;           // +1 = left, -1 = right
+    private float _avoidDir;            // hysteresis-locked avoidance side
+    private float _modeTimer;           // seconds spent in current mode
+    private float _goalDistAtModeStart; // goal distance when entering AvoidTurn / WallFollow
+    private float _bestGoalDist;        // best goal distance achieved in run
+    private float _noProgressTimer;     // time without meaningful improvement in _bestGoalDist
+    private float _prevGoalAngle;       // smoothed goal angle for deadband stability
+    private float _lastSignTurn;        // last non-trivial turn direction (+1 / -1)
+    private int _signFlipCount;         // recent direction reversals
+    private float _flipDecayTimer;      // decay timer for _signFlipCount
+
+    public string Name => "SteadyProgressNavigator";
+
+    public void ResetController()
+    {
+        _mode = Mode.SeekGoal;
+
+        _fFront = NoDetectValue;
+        _fLeft = NoDetectValue;
+        _fRight = NoDetectValue;
+        _fLeftSide = NoDetectValue;
+        _fRightSide = NoDetectValue;
+
+        _noDetFront = 0;
+        _noDetLeft = 0;
+        _noDetRight = 0;
+        _noDetLeftSide = 0;
+        _noDetRightSide = 0;
+
+        _escapeDir = 1.0f;
+        _avoidDir = 1.0f;
+        _modeTimer = 0.0f;
+        _goalDistAtModeStart = float.MaxValue;
+        _bestGoalDist = float.MaxValue;
+        _noProgressTimer = 0.0f;
+        _prevGoalAngle = 0.0f;
+        _lastSignTurn = 0.0f;
+        _signFlipCount = 0;
+        _flipDecayTimer = 0.0f;
+    }
+
+    public (float speed01, float turn) Decide(Observation obs)
+    {
+        _modeTimer += Dt;
+        _flipDecayTimer += Dt;
+        if (_flipDecayTimer >= 1.0f)
+        {
+            _flipDecayTimer = 0.0f;
+            if (_signFlipCount > 0)
+            {
+                _signFlipCount--;
+            }
+        }
+
+        UpdateFilteredSensors(obs);
+
+        float rawGoalAngle = Mathf.Clamp(obs.goalAngleDeg, -180.0f, 180.0f);
+        float goalDist = Mathf.Max(0.0f, obs.goalDistance);
+
+        // Smooth goal angle slightly and apply a small deadband to prevent centerline chatter
+        _prevGoalAngle = Mathf.Lerp(_prevGoalAngle, rawGoalAngle, 0.5f);
+        float goalAngle = Mathf.Abs(_prevGoalAngle) < 3.5f ? 0.0f : _prevGoalAngle;
+
+        if (goalDist < _bestGoalDist - 0.06f)
+        {
+            _bestGoalDist = goalDist;
+            _noProgressTimer = 0.0f;
+        }
+        else
+        {
+            _noProgressTimer += Dt;
+        }
+
+        float leftClear = Mathf.Min(_fLeft, _fLeftSide * 1.05f);
+        float rightClear = Mathf.Min(_fRight, _fRightSide * 1.05f);
+
+        bool frontBlocked = _fFront < FrontStopDist ||
+                            (_fLeft < 0.25f && Mathf.Abs(goalAngle) < 65.0f) ||
+                            (_fRight < 0.25f && Mathf.Abs(goalAngle) < 65.0f);
+
+        bool inTightSpace = (_fLeftSide < SideDangerDist && _fRightSide < SideDangerDist) ||
+                            (_fFront < 0.48f && leftClear < SideComfortDist && rightClear < SideComfortDist);
+
+        // Mode transitions
+        if (_mode == Mode.SeekGoal)
+        {
+            if (_noProgressTimer > 5.5f)
+            {
+                // Stuck / looping without net progress: commit to a long dead-end turn
+                _escapeDir = ChooseTurnDirection(goalAngle, leftClear, rightClear, flipPrevious: true);
+                _mode = Mode.DeadEndTurn;
+                _modeTimer = 0.0f;
+                _goalDistAtModeStart = goalDist;
+                _noProgressTimer = 0.0f;
+                _signFlipCount = 0;
+            }
+            else if (frontBlocked)
+            {
+                _escapeDir = ChooseTurnDirection(goalAngle, leftClear, rightClear, flipPrevious: false);
+                _mode = inTightSpace ? Mode.WallFollow : Mode.AvoidTurn;
+                _modeTimer = 0.0f;
+                _goalDistAtModeStart = goalDist;
+                _signFlipCount = 0;
+            }
+        }
+        else if (_mode == Mode.AvoidTurn)
+        {
+            bool clearAhead = _fFront > FrontSlowDist && _fLeft > 0.38f && _fRight > 0.38f;
+            bool goalAligned = Mathf.Abs(goalAngle) < 45.0f && IsDirectionClear(goalAngle);
+            bool madeProgress = goalDist < _goalDistAtModeStart - 0.14f;
+
+            // Commit for at least 0.85 s so we clear the corner before re-aiming at goal
+            if (_modeTimer >= 0.85f && clearAhead && (goalAligned || (madeProgress && _modeTimer >= 1.3f)))
+            {
+                SwitchToSeek();
+            }
+            else if (_fLeftSide < SideDangerDist && _fRightSide < SideDangerDist)
+            {
+                _mode = Mode.WallFollow;
+                _modeTimer = 0.0f;
+                _goalDistAtModeStart = goalDist;
+            }
+            else if (_modeTimer >= 2.8f)
+            {
+                // If still turning after 2.8 s, switch to WallFollow rather than re-entering SeekGoal into a wall
+                _mode = Mode.WallFollow;
+                _modeTimer = 0.0f;
+                _goalDistAtModeStart = goalDist;
+            }
+        }
+        else if (_mode == Mode.WallFollow)
+        {
+            bool frontOpen = _fFront > FrontSlowDist && _fLeft > 0.40f && _fRight > 0.40f;
+            bool goalClear = IsDirectionClear(goalAngle) && Mathf.Abs(goalAngle) < 60.0f;
+            bool improvedSinceStart = goalDist < _goalDistAtModeStart - 0.18f;
+
+            // Stay in WallFollow at least 1.8 s and require either clear goal path + progress or 3.5 s sweep
+            if (_modeTimer >= 1.8f && frontOpen && goalClear && (improvedSinceStart || _modeTimer >= 3.5f))
+            {
+                SwitchToSeek();
+            }
+            else if (_modeTimer >= 7.5f && !improvedSinceStart)
+            {
+                // Likely trapped in a U-shape: rotate firmly to try escaping out of the pocket
+                _escapeDir = -_escapeDir;
+                _mode = Mode.DeadEndTurn;
+                _modeTimer = 0.0f;
+                _goalDistAtModeStart = goalDist;
+            }
+        }
+        else if (_mode == Mode.DeadEndTurn)
+        {
+            bool pathOut = _fFront > 0.75f && leftClear > 0.45f && rightClear > 0.45f && Mathf.Abs(goalAngle) < 85.0f;
+            if (_modeTimer >= 1.6f && pathOut)
+            {
+                _mode = Mode.WallFollow;
+                _modeTimer = 0.0f;
+                _goalDistAtModeStart = goalDist;
+            }
+            else if (_modeTimer >= 3.4f)
+            {
+                _mode = Mode.WallFollow;
+                _modeTimer = 0.0f;
+                _goalDistAtModeStart = goalDist;
+            }
+        }
+
+        float speed01;
+        float turnCmd;
+
+        switch (_mode)
+        {
+            case Mode.AvoidTurn:
+                (speed01, turnCmd) = ComputeAvoidTurn(goalAngle, leftClear, rightClear);
+                break;
+            case Mode.WallFollow:
+                (speed01, turnCmd) = ComputeWallFollow(leftClear, rightClear);
+                break;
+            case Mode.DeadEndTurn:
+                (speed01, turnCmd) = ComputeDeadEndTurn(leftClear, rightClear);
+                break;
+            default:
+                (speed01, turnCmd) = ComputeSeekGoal(goalAngle, goalDist, leftClear, rightClear);
+                break;
+        }
+
+        // Track rapid sign reversals in SeekGoal; if oscillating, escalate to WallFollow
+        if (_mode == Mode.SeekGoal && Mathf.Abs(turnCmd) > 0.22f)
+        {
+            float sign = Mathf.Sign(turnCmd);
+            if (_lastSignTurn != 0.0f && sign != _lastSignTurn)
+            {
+                _signFlipCount++;
+            }
+            _lastSignTurn = sign;
+
+            if (_signFlipCount >= 5)
+            {
+                _escapeDir = _avoidDir;
+                _mode = Mode.WallFollow;
+                _modeTimer = 0.0f;
+                _goalDistAtModeStart = goalDist;
+                _signFlipCount = 0;
+                (speed01, turnCmd) = ComputeWallFollow(leftClear, rightClear);
+            }
+        }
+
+        // Hard safety overrides to guarantee zero collisions under sensor noise
+        if (_fFront < 0.18f)
+        {
+            speed01 = Mathf.Min(speed01, 0.08f);
+            turnCmd = _escapeDir;
+        }
+        if (_fLeft < 0.15f && turnCmd > 0.0f)
+        {
+            turnCmd = -0.65f;
+            speed01 = Mathf.Min(speed01, 0.22f);
+        }
+        if (_fRight < 0.15f && turnCmd < 0.0f)
+        {
+            turnCmd = 0.65f;
+            speed01 = Mathf.Min(speed01, 0.22f);
+        }
+        if (_fLeftSide < 0.12f && turnCmd > 0.0f)
+        {
+            turnCmd = Mathf.Min(turnCmd, -0.40f);
+            speed01 = Mathf.Min(speed01, 0.28f);
+        }
+        if (_fRightSide < 0.12f && turnCmd < 0.0f)
+        {
+            turnCmd = Mathf.Max(turnCmd, 0.40f);
+            speed01 = Mathf.Min(speed01, 0.28f);
+        }
+
+        speed01 = Mathf.Clamp01(speed01);
+        turnCmd = Mathf.Clamp(turnCmd, -1.0f, 1.0f);
+        return (speed01, turnCmd);
+    }
+
+    private void SwitchToSeek()
+    {
+        _mode = Mode.SeekGoal;
+        _modeTimer = 0.0f;
+        _lastSignTurn = 0.0f;
+        _signFlipCount = 0;
+    }
+
+    private void UpdateFilteredSensors(Observation obs)
+    {
+        _fFront = FilterSensor(obs.front, _fFront, ref _noDetFront);
+        _fLeft = FilterSensor(obs.left, _fLeft, ref _noDetLeft);
+        _fRight = FilterSensor(obs.right, _fRight, ref _noDetRight);
+        _fLeftSide = FilterSensor(obs.leftSide, _fLeftSide, ref _noDetLeftSide);
+        _fRightSide = FilterSensor(obs.rightSide, _fRightSide, ref _noDetRightSide);
+    }
+
+    private static float FilterSensor(float raw, float prevFiltered, ref int noDetCount)
+    {
+        float clamped = Mathf.Clamp(raw, 0.02f, NoDetectValue);
+        bool isNoDetect = clamped >= NoDetectValue - 0.001f;
+
+        if (isNoDetect)
+        {
+            noDetCount++;
+            if (prevFiltered < 1.2f && noDetCount < 3)
+            {
+                return Mathf.Max(0.02f, prevFiltered + 0.04f);
+            }
+            if (prevFiltered < 2.5f && noDetCount < 2)
+            {
+                return Mathf.Max(0.02f, prevFiltered + 0.10f);
+            }
+            return NoDetectValue;
+        }
+
+        noDetCount = 0;
+
+        if (clamped < prevFiltered)
+        {
+            float alpha = clamped < 0.45f ? 0.75f : 0.55f;
+            return Mathf.Lerp(prevFiltered, clamped, alpha);
+        }
+
+        return Mathf.Lerp(prevFiltered, clamped, 0.30f);
+    }
+
+    private float ChooseTurnDirection(float goalAngleDeg, float leftClear, float rightClear, bool flipPrevious)
+    {
+        if (flipPrevious)
+        {
+            return -_escapeDir;
+        }
+
+        float diff = leftClear - rightClear;
+        if (Mathf.Abs(diff) > 0.18f)
+        {
+            return diff > 0.0f ? 1.0f : -1.0f;
+        }
+        if (Mathf.Abs(goalAngleDeg) > 20.0f)
+        {
+            return goalAngleDeg > 0.0f ? 1.0f : -1.0f;
+        }
+        return _escapeDir != 0.0f ? _escapeDir : (leftClear >= rightClear ? 1.0f : -1.0f);
+    }
+
+    private bool IsDirectionClear(float angleDeg)
+    {
+        if (angleDeg > 22.0f)
+        {
+            return _fLeft > 0.60f && _fLeftSide > 0.26f;
+        }
+        if (angleDeg < -22.0f)
+        {
+            return _fRight > 0.60f && _fRightSide > 0.26f;
+        }
+        return _fFront > FrontSlowDist && _fLeft > 0.44f && _fRight > 0.44f;
+    }
+
+    private (float speed01, float turn) ComputeSeekGoal(
+        float goalAngleDeg,
+        float goalDist,
+        float leftClear,
+        float rightClear)
+    {
+        // Wide hysteresis on _avoidDir so noisy readings don't flip avoidance side mid-maneuver
+        if (leftClear - rightClear > 0.22f)
+        {
+            _avoidDir = 1.0f;
+        }
+        else if (rightClear - leftClear > 0.22f)
+        {
+            _avoidDir = -1.0f;
+        }
+
+        float goalTurn = Mathf.Clamp(goalAngleDeg / 38.0f, -1.0f, 1.0f);
+
+        float leftRepulsion = 0.0f;
+        if (_fLeft < 0.52f)
+        {
+            leftRepulsion += (0.52f - _fLeft) / 0.52f;
+        }
+        if (_fLeftSide < SideComfortDist)
+        {
+            leftRepulsion += 0.70f * ((SideComfortDist - _fLeftSide) / SideComfortDist);
+        }
+
+        float rightRepulsion = 0.0f;
+        if (_fRight < 0.52f)
+        {
+            rightRepulsion += (0.52f - _fRight) / 0.52f;
+        }
+        if (_fRightSide < SideComfortDist)
+        {
+            rightRepulsion += 0.70f * ((SideComfortDist - _fRightSide) / SideComfortDist);
+        }
+
+        float obstacleBias = (rightRepulsion - leftRepulsion) * 0.65f;
+
+        float frontUrgency = _fFront < FrontSlowDist
+            ? Mathf.Clamp01((FrontSlowDist - _fFront) / (FrontSlowDist - FrontStopDist))
+            : 0.0f;
+
+        float turn = Mathf.Lerp(goalTurn + obstacleBias, _avoidDir, frontUrgency * 0.65f);
+
+        float minSide = Mathf.Min(_fLeft, Mathf.Min(_fRight, Mathf.Min(_fLeftSide, _fRightSide)));
+        float clearanceFactor = Mathf.Clamp01((Mathf.Min(_fFront, minSide * 1.5f) - 0.16f) / 0.54f);
+        float turnFactor = Mathf.Clamp01(1.0f - 0.45f * Mathf.Abs(turn));
+        float goalFactor = goalDist < 0.30f ? Mathf.Clamp(goalDist / 0.30f, 0.25f, 1.0f) : 1.0f;
+
+        float speed01 = Mathf.Lerp(0.18f, 1.0f, clearanceFactor) * turnFactor * goalFactor;
+        if (Mathf.Abs(goalAngleDeg) > 115.0f && _fFront > 0.65f)
+        {
+            speed01 = Mathf.Min(speed01, 0.35f);
+        }
+
+        return (speed01, turn);
+    }
+
+    private (float speed01, float turn) ComputeAvoidTurn(
+        float goalAngleDeg,
+        float leftClear,
+        float rightClear)
+    {
+        float turn = _escapeDir * 0.92f;
+
+        // Only blend toward goal once front is clearly open and goal lies on the same side we are turning
+        if (_fFront > FrontSlowDist * 0.85f &&
+            Mathf.Sign(goalAngleDeg) == _escapeDir &&
+            Mathf.Abs(goalAngleDeg) < 50.0f &&
+            _modeTimer > 1.0f)
+        {
+            turn = Mathf.Lerp(_escapeDir * 0.92f, Mathf.Clamp(goalAngleDeg / 38.0f, -1.0f, 1.0f), 0.25f);
+        }
+
+        float minClear = Mathf.Min(_fFront, Mathf.Min(leftClear, rightClear));
+        float speed01 = minClear < 0.25f ? 0.18f : 0.44f;
+        return (speed01, turn);
+    }
+
+    private (float speed01, float turn) ComputeWallFollow(float leftClear, float rightClear)
+    {
+        float sideDist = _escapeDir > 0.0f
+            ? Mathf.Min(_fRightSide, _fRight * 0.9f)
+            : Mathf.Min(_fLeftSide, _fLeft * 0.9f);
+
+        float diagDist = _escapeDir > 0.0f ? _fRight : _fLeft;
+
+        if (_fFront < FrontStopDist * 1.18f)
+        {
+            float tightFactor = Mathf.Clamp01((FrontStopDist * 1.18f - _fFront) / 0.20f);
+            float speed = Mathf.Lerp(0.36f, 0.16f, tightFactor);
+            return (speed, _escapeDir);
+        }
+
+        float error = SideComfortDist - sideDist;
+        float wallSteer = Mathf.Clamp(error * 2.5f, -0.65f, 0.75f) * _escapeDir;
+
+        if (diagDist < 0.30f)
+        {
+            wallSteer = _escapeDir * 0.85f;
+        }
+        else if (sideDist > SideComfortDist + 0.25f && _fFront > 0.58f)
+        {
+            wallSteer = -_escapeDir * 0.35f;
+        }
+
+        float minClear = Mathf.Min(_fFront, Mathf.Min(leftClear, rightClear));
+        float speed01 = minClear < 0.25f ? 0.22f : Mathf.Clamp(_fFront * 0.85f, 0.25f, 0.60f);
+        return (speed01, wallSteer);
+    }
+
+    private (float speed01, float turn) ComputeDeadEndTurn(float leftClear, float rightClear)
+    {
+        float minClear = Mathf.Min(_fFront, Mathf.Min(leftClear, rightClear));
+        float speed01 = minClear < 0.24f ? 0.12f : 0.28f;
+        return (speed01, _escapeDir);
+    }Test report: 3/10 reached the goal, 0 collisions, 7 timeouts (got stuck), 0 runtime errors. Most common failure: gets stuck oscillating.
+Please improve the controller and send the complete code again.using System;
+using UnityEngine;
+
+public class LLM_Controller : IRoverController
+{
+    private enum Mode
+    {
+        SeekGoal,
+        WallFollow
+    }
+
+    private const float Dt = 0.05f;
+    private const float NoDetectValue = 4.0f;
+
+    // Rover size: 0.20 m long x 0.15 m wide
+    private const float FrontBlockDist = 0.30f;
+    private const float SideHugTarget = 0.34f;
+    private const float SideTooClose = 0.20f;
+
+    private Mode _mode;
+
+    // Filtered ultrasonic distances (m)
+    private float _fFront;
+    private float _fLeft;
+    private float _fRight;
+    private float _fLeftSide;
+    private float _fRightSide;
+
+    // Consecutive 4.0 (no-detection) counters
+    private int _noDetFront;
+    private int _noDetLeft;
+    private int _noDetRight;
+    private int _noDetLeftSide;
+    private int _noDetRightSide;
+
+    // Wall-follow & progress state
+    private float _wallSide;            // +1.0 = hug wall on left, -1.0 = hug wall on right
+    private float _modeTimer;           // seconds spent in current mode
+    private float _goalDistAtWallStart; // goal distance when entering WallFollow
+    private bool _flippedWallOnce;      // whether we already flipped wall side in current pocket
+    private float _bestGoalDist;        // best goal distance achieved overall
+    private float _noProgressTimer;     // seconds without new best goal distance
+
+    public string Name => "CleanWallSeekNavigator";
+
+    public void ResetController()
+    {
+        _mode = Mode.SeekGoal;
+
+        _fFront = NoDetectValue;
+        _fLeft = NoDetectValue;
+        _fRight = NoDetectValue;
+        _fLeftSide = NoDetectValue;
+        _fRightSide = NoDetectValue;
+
+        _noDetFront = 0;
+        _noDetLeft = 0;
+        _noDetRight = 0;
+        _noDetLeftSide = 0;
+        _noDetRightSide = 0;
+
+        _wallSide = -1.0f;
+        _modeTimer = 0.0f;
+        _goalDistAtWallStart = float.MaxValue;
+        _flippedWallOnce = false;
+        _bestGoalDist = float.MaxValue;
+        _noProgressTimer = 0.0f;
+    }
+
+    public (float speed01, float turn) Decide(Observation obs)
+    {
+        _modeTimer += Dt;
+
+        UpdateFilteredSensors(obs);
+
+        float goalAngle = Mathf.Clamp(obs.goalAngleDeg, -180.0f, 180.0f);
+        float goalDist = Mathf.Max(0.0f, obs.goalDistance);
+
+        if (goalDist < _bestGoalDist - 0.05f)
+        {
+            _bestGoalDist = goalDist;
+            _noProgressTimer = 0.0f;
+        }
+        else
+        {
+            _noProgressTimer += Dt;
+        }
+
+        if (_mode == Mode.SeekGoal)
+        {
+            bool frontBlocked = _fFront < FrontBlockDist;
+            bool diagonalBlocked = (_fLeft < 0.22f && goalAngle > -20.0f) ||
+                                   (_fRight < 0.22f && goalAngle < 20.0f);
+            bool stalled = _noProgressTimer > 6.0f && _modeTimer > 2.0f;
+
+            if (frontBlocked || diagonalBlocked || stalled)
+            {
+                _wallSide = ChooseWallSide(goalAngle);
+                _mode = Mode.WallFollow;
+                _modeTimer = 0.0f;
+                _goalDistAtWallStart = goalDist;
+                _flippedWallOnce = false;
+            }
+        }
+        else // Mode.WallFollow
+        {
+            bool clearToSeek = _modeTimer >= 1.6f &&
+                               _fFront > 0.85f &&
+                               _fLeft > 0.48f &&
+                               _fRight > 0.48f &&
+                               Mathf.Abs(goalAngle) < 35.0f &&
+                               (goalDist < _goalDistAtWallStart - 0.12f || _modeTimer >= 4.0f);
+
+            if (clearToSeek)
+            {
+                _mode = Mode.SeekGoal;
+                _modeTimer = 0.0f;
+                _noProgressTimer = 0.0f;
+            }
+            else if (_modeTimer >= 9.0f && goalDist >= _goalDistAtWallStart - 0.10f)
+            {
+                if (!_flippedWallOnce)
+                {
+                    // Reverse wall side once to escape a U-shaped dead end
+                    _wallSide = -_wallSide;
+                    _flippedWallOnce = true;
+                    _modeTimer = 0.0f;
+                    _goalDistAtWallStart = goalDist;
+                }
+                else
+                {
+                    // Re-evaluate goal direction after trying both wall sides
+                    _mode = Mode.SeekGoal;
+                    _modeTimer = 0.0f;
+                    _noProgressTimer = 0.0f;
+                }
+            }
+        }
+
+        float speed01;
+        float turn;
+
+        if (_mode == Mode.SeekGoal)
+        {
+            (speed01, turn) = ComputeSeekGoal(goalAngle, goalDist);
+        }
+        else
+        {
+            (speed01, turn) = ComputeWallFollow();
+        }
+
+        // Hard safety guards against wall/obstacle contact under noisy sensors
+        if (_fFront < 0.17f)
+        {
+            speed01 = Mathf.Min(speed01, 0.22f);
+            turn = _wallSide != 0.0f ? -_wallSide : (_fLeft >= _fRight ? 1.0f : -1.0f);
+        }
+        if (_fLeftSide < 0.12f && turn > 0.0f)
+        {
+            turn = -0.50f;
+            speed01 = Mathf.Max(0.22f, Mathf.Min(speed01, 0.35f));
+        }
+        if (_fRightSide < 0.12f && turn < 0.0f)
+        {
+            turn = 0.50f;
+            speed01 = Mathf.Max(0.22f, Mathf.Min(speed01, 0.35f));
+        }
+
+        speed01 = Mathf.Clamp(speed01, 0.20f, 1.0f);
+        turn = Mathf.Clamp(turn, -1.0f, 1.0f);
+        return (speed01, turn);
+    }
+
+    private void UpdateFilteredSensors(Observation obs)
+    {
+        _fFront = FilterSensor(obs.front, _fFront, ref _noDetFront);
+        _fLeft = FilterSensor(obs.left, _fLeft, ref _noDetLeft);
+        _fRight = FilterSensor(obs.right, _fRight, ref _noDetRight);
+        _fLeftSide = FilterSensor(obs.leftSide, _fLeftSide, ref _noDetLeftSide);
+        _fRightSide = FilterSensor(obs.rightSide, _fRightSide, ref _noDetRightSide);
+    }
+
+    private static float FilterSensor(float raw, float prevFiltered, ref int noDetCount)
+    {
+        float clamped = Mathf.Clamp(raw, 0.02f, NoDetectValue);
+        bool isNoDetect = clamped >= NoDetectValue - 0.001f;
+
+        if (isNoDetect)
+        {
+            noDetCount++;
+            if (prevFiltered < 1.2f && noDetCount < 3)
+            {
+                return Mathf.Max(0.02f, prevFiltered + 0.04f);
+            }
+            if (prevFiltered < 2.5f && noDetCount < 2)
+            {
+                return Mathf.Max(0.02f, prevFiltered + 0.10f);
+            }
+            return NoDetectValue;
+        }
+
+        noDetCount = 0;
+
+        if (clamped < prevFiltered)
+        {
+            float alpha = clamped < 0.45f ? 0.75f : 0.55f;
+            return Mathf.Lerp(prevFiltered, clamped, alpha);
+        }
+
+        return Mathf.Lerp(prevFiltered, clamped, 0.30f);
+    }
+
+    private float ChooseWallSide(float goalAngleDeg)
+    {
+        float leftDist = Mathf.Min(_fLeft, _fLeftSide);
+        float rightDist = Mathf.Min(_fRight, _fRightSide);
+
+        // If goal is to the left, hugging a wall on the right lets us curve left toward the goal;
+        // if goal is to the right, hugging a wall on the left lets us curve right toward the goal.
+        if (Mathf.Abs(leftDist - rightDist) > 0.15f)
+        {
+            return leftDist < rightDist ? 1.0f : -1.0f;
+        }
+        if (Mathf.Abs(goalAngleDeg) > 15.0f)
+        {
+            return goalAngleDeg > 0.0f ? -1.0f : 1.0f;
+        }
+        return -1.0f;
+    }
+
+    private (float speed01, float turn) ComputeSeekGoal(float goalAngleDeg, float goalDist)
+    {
+        float deadbandAngle = Mathf.Abs(goalAngleDeg) < 3.0f ? 0.0f : goalAngleDeg;
+        float turn = Mathf.Clamp(deadbandAngle / 35.0f, -1.0f, 1.0f);
+
+        // Gentle side push only when an obstacle is close to a flank
+        if (_fLeft < 0.26f)
+        {
+            turn -= 0.45f * ((0.26f - _fLeft) / 0.26f);
+        }
+        if (_fRight < 0.26f)
+        {
+            turn += 0.45f * ((0.26f - _fRight) / 0.26f);
+        }
+        if (_fLeftSide < SideTooClose)
+        {
+            turn -= 0.35f * ((SideTooClose - _fLeftSide) / SideTooClose);
+        }
+        if (_fRightSide < SideTooClose)
+        {
+            turn += 0.35f * ((SideTooClose - _fRightSide) / SideTooClose);
+        }
+
+        float minForward = Mathf.Min(_fFront, Mathf.Min(_fLeft, _fRight));
+        float speedFactor = Mathf.Clamp01((minForward - 0.18f) / 0.55f);
+        float turnFactor = Mathf.Clamp01(1.0f - 0.45f * Mathf.Abs(turn));
+        float goalFactor = goalDist < 0.35f ? Mathf.Clamp(goalDist / 0.35f, 0.35f, 1.0f) : 1.0f;
+
+        float speed01 = Mathf.Lerp(0.28f, 1.0f, speedFactor) * turnFactor * goalFactor;
+        return (speed01, turn);
+    }
+
+    private (float speed01, float turn) ComputeWallFollow()
+    {
+        // _wallSide == +1 means wall is on our LEFT; _wallSide == -1 means wall is on our RIGHT.
+        float wallSideDist = _wallSide > 0.0f ? _fLeftSide : _fRightSide;
+        float wallDiagDist = _wallSide > 0.0f ? _fLeft : _fRight;
+
+        // If blocked in front, turn away from the wall we're following (-_wallSide)
+        if (_fFront < FrontBlockDist)
+        {
+            float turnAway = -_wallSide * 0.95f;
+            float speed = _fFront < 0.22f ? 0.24f : 0.40f;
+            return (speed, turnAway);
+        }
+
+        // If the diagonal sensor on the wall side sees an inner corner ahead, steer away from wall
+        if (wallDiagDist < 0.28f)
+        {
+            return (0.38f, -_wallSide * 0.85f);
+        }
+
+        // Maintain SideHugTarget distance from the followed wall:
+        // If wallSideDist < SideHugTarget (too close), steer away from wall (-_wallSide).
+        // If wallSideDist > SideHugTarget (too far / outer corner), steer toward wall (+_wallSide).
+        float distError = wallSideDist - SideHugTarget;
+        float steerTowardWall = Mathf.Clamp(distError * 2.4f, -0.65f, 0.65f);
+        float turn = steerTowardWall * _wallSide;
+
+        float speed01 = Mathf.Clamp(_fFront * 0.80f, 0.32f, 0.68f);
+        return (speed01, turn);
+    }
+}
+}

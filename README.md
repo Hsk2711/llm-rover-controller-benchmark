@@ -45,9 +45,10 @@ the offset or the sensor-seed scheme if you want bit-identical numbers.
 
 ## Third-party material
 
-- `Assets/Models/Mars 2020 Perseverance Rover.glb`: NASA/JPL-Caltech, NASA 3D Resources. Optional visual only
-  (`SimConfig.showVisualModel`), switched off in all experiments. NASA content is generally not under
-  copyright, but NASA's media guidelines apply (credit NASA/JPL-Caltech; no implied endorsement).
+No third-party 3D models, textures or fonts are included. (An optional NASA/JPL Perseverance visual model that was
+used for demo screenshots has been removed from the release; it was never active in the experiments, so the rover is
+the plain box shown in the figures.)
+
 - `Assets/TutorialInfo/`, `Assets/Readme.asset`, `Assets/Settings/`: Unity URP project template files, used
   under the Unity terms.
 - Unity packages are listed in `Packages/manifest.json` and downloaded by the Unity Package Manager; they are

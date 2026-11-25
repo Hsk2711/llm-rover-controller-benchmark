@@ -1,0 +1,59 @@
+CHATBOT ATTEMPTS - CHEAT SHEET (ICARA 2027 study)
+=================================================
+Replace BOT (ChatGPT / Gemini / Claude), N (attempt number), R (round 1-3) and M (minutes)
+before sending. Never send anything with capital placeholders left in it.
+
+ORDER STILL TO DO (tick as you go)
+ [ ] ChatGPT 3   [ ] Gemini 2   [ ] Claude 2
+ [ ] ChatGPT 4   [ ] Gemini 3   [ ] Claude 3
+ [ ] ChatGPT 5   [ ] Gemini 4   [ ] Claude 4
+                 [ ] Gemini 5   [ ] Claude 5
+
+BEFORE EACH ATTEMPT
+ - New EMPTY Notepad file for this attempt (e.g. Gemini_2.txt)
+ - Phone timer ready (pause it while Claude Code is testing)
+ - Open a no-memory chat:
+     ChatGPT: New chat -> Temporary Chat ON (top right). Model GPT-6. Think: not pressed.
+     Gemini : Temporary chat (dotted bubble). Auto mode. No thinking/deep mode.
+     Claude : claude.ai -> incognito (ghost icon). Model Opus 5.5. Same thinking setting as attempt 1.
+
+STEP 1 - CHATBOT: paste ONLY the task description
+ (open docs\llm_task_spec.txt in Notepad -> Ctrl+A -> Ctrl+C -> paste -> send)
+ Copy your message and the full reply (explanation + code) into the attempt's Notepad file.
+
+STEP 2 - CLAUDE CODE: save the one-shot (type this line, Shift+Enter, paste the code)
+BOT attempt N, one-shot, temporary/incognito chat. Save this code as Assets/Scripts/Controllers/LLM/LLM_BOT_N_OS.cs, renaming only the class LLM_Controller to LLM_BOT_N_OS. Change nothing else. Tell me if it compiles (if not, move it to LLM_NoCompile/ and show me the exact error lines), and run Quick Test. Also tell me the Name the code gives itself.
+
+ -> If 10/10: no feedback rounds. Send:
+BOT attempt N scored 10/10 one-shot: create LLM_BOT_N_FB.cs as an exact copy with only the class renamed to LLM_BOT_N_FB (0 feedback rounds, FB = OS). Commit.
+
+STEP 3 - FEEDBACK ROUNDS (R = 1, 2, 3; stop early only at 10/10)
+ 3a. To the CHATBOT (same chat) - only ONE of these:
+   If it did NOT compile:
+The code does not compile. Errors:
+PASTE THE ERROR LINES HERE
+Please fix and send the complete code again.
+
+   If it compiled:
+PASTE THE ONE-LINE TEST REPORT HERE
+Please improve the controller and send the complete code again.
+
+ 3b. To CLAUDE CODE (type this line, Shift+Enter, paste the new code):
+BOT attempt N, feedback round R. Save this code as Assets/Scripts/Controllers/LLM/LLM_BOT_N_FB.cs (replace the earlier FB version; keep each round in LLM_History), renaming only the class LLM_Controller to LLM_BOT_N_FB. Change nothing else. Compile and run Quick Test. If it does not compile, show me the exact error lines.
+
+ Copy each message and reply into the Notepad file as you go.
+
+STEP 4 - FINISH THE ATTEMPT
+ Stop the timer. Send to Claude Code:
+BOT attempt N finished. Feedback rounds: R. Model: MODEL NAME AS SHOWN. Human minutes: M. Update the log and commit.
+
+ Save the Notepad file and attach it in the Claude chat with one line, e.g.
+ "Gemini 2: one-shot 6/10; r1 7/10; r2 7/10; r3 8/10".
+ Only THEN close the chatbot tab.
+
+GOLDEN RULES
+ - Only the task description, raw error lines or the one-line test report go to a chatbot.
+   No hints, no greetings, no questions (ask about versions in a separate chat if needed).
+ - Never let Claude Code change chatbot code (only the class name).
+ - Always all 3 rounds unless 10/10. The LAST round is the final result, never the best one.
+ - Finish one attempt completely before opening the next chatbot.
