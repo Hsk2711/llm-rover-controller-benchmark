@@ -49,6 +49,8 @@ No third-party 3D models, textures or fonts are included. (An optional NASA/JPL 
 used for demo screenshots has been removed from the release; it was never active in the experiments, so the rover is
 the plain box shown in the figures.)
 
+The 3D visual model used during development was disabled in all experiments and has been removed from this release; results are unaffected (verified).
+
 - `Assets/TutorialInfo/`, `Assets/Readme.asset`, `Assets/Settings/`: Unity URP project template files, used
   under the Unity terms.
 - Unity packages are listed in `Packages/manifest.json` and downloaded by the Unity Package Manager; they are
