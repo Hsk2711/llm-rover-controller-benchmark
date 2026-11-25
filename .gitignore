@@ -145,3 +145,8 @@ __pycache__/
 # Unity Version Control leftovers (this project uses git)
 .plastic/
 ignore.conf
+
+# release: runtime scratch files
+results/inflight.txt
+results/progress*.txt
+llm_rounds/

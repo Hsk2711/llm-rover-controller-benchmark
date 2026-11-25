@@ -1,0 +1,17 @@
+Creative Commons Attribution 4.0 International (CC BY 4.0)
+
+Copyright (c) 2026 Hassankutty Kiliyamparambil and Lubna Kakkengal
+
+The data of this repository is licensed under CC BY 4.0:
+https://creativecommons.org/licenses/by/4.0/legalcode
+
+You may share and adapt the material for any purpose, including commercially,
+if you give appropriate credit, link to the licence and indicate changes.
+
+Covered: results/ (all CSV files and logs), analysis/out/ (tables and figures),
+docs/llm_transcripts/, docs/llm_task_spec.txt, docs/feedback_template.txt,
+the chatbot-generated controller files (Assets/Scripts/Controllers/LLM,
+LLM_History/, LLM_NoCompile/, LLM_History/Excluded/) and docs/figures/.
+The source code of the study is under the MIT licence (LICENSE).
+Third-party material (the NASA Perseverance model, Unity packages) is not
+covered by this licence.
